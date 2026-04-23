@@ -1,0 +1,5 @@
+ESTADO FINAL DE SESIÓN:
+- Dominio: agent.leveloneagency.co.uk
+- SSL: Activo y Verificado (Certifi fix aplicado en Mac)
+- Proxy: Caddy (7880 -> 7890)
+- Worker: Funcionando con WSS

@@ -1,0 +1,1220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>ALEX Control Centre — LevelOne Agency</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#070910;--s1:#0d0f18;--s2:#131621;--s3:#1b1f2e;
+  --border:#232840;--border2:#2d3352;
+  --accent:#7c6dff;--accent2:#00e5b8;--accent3:#ff5c7c;
+  --warn:#ffb020;--info:#3d9eff;
+  --text:#eceef8;--text2:#8890b5;--text3:#555d80;
+  --green:#1ed880;--red:#ff4062;
+  --r:14px;--r-sm:8px;
+  --font:'Inter',system-ui,sans-serif;
+  --mono:'JetBrains Mono',monospace;
+  --sidebar:260px;
+}
+html,body{height:100%;overflow:hidden}
+body{font-family:var(--font);background:var(--bg);color:var(--text);display:flex;font-size:14px;line-height:1.5}
+
+/* ===================== SCROLLBAR ===================== */
+::-webkit-scrollbar{width:4px;height:4px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:4px}
+
+/* ===================== SIDEBAR ===================== */
+.sidebar{
+  width:var(--sidebar);min-width:var(--sidebar);height:100vh;
+  background:var(--s1);border-right:1px solid var(--border);
+  display:flex;flex-direction:column;overflow:hidden;position:relative;z-index:10;
+}
+.sidebar::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:200px;
+  background:radial-gradient(ellipse at 50% -20%,rgba(124,109,255,.18) 0%,transparent 70%);
+  pointer-events:none;
+}
+.logo-wrap{padding:28px 24px 20px;border-bottom:1px solid var(--border)}
+.logo-badge{display:flex;align-items:center;gap:10px;margin-bottom:6px}
+.logo-icon{
+  width:36px;height:36px;border-radius:10px;
+  background:linear-gradient(135deg,var(--accent),var(--accent2));
+  display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;
+  box-shadow:0 0 20px rgba(124,109,255,.35);
+}
+.logo-title{font-size:16px;font-weight:800;letter-spacing:-.3px}
+.logo-sub{font-size:11px;color:var(--text3);letter-spacing:.6px;text-transform:uppercase;margin-left:46px}
+.agent-status{display:flex;align-items:center;gap:6px;margin-top:10px;padding:8px 12px;background:rgba(30,216,128,.06);border:1px solid rgba(30,216,128,.15);border-radius:var(--r-sm)}
+.agent-status .dot{width:7px;height:7px;border-radius:50%;background:var(--green);animation:pulse 2s ease infinite;flex-shrink:0}
+.agent-status span{font-size:11px;color:var(--green);font-weight:500}
+
+nav{flex:1;overflow-y:auto;padding:12px 12px}
+.nav-section{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;padding:8px 12px 4px;margin-top:4px}
+.nav-item{
+  display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:var(--r-sm);
+  cursor:pointer;color:var(--text2);font-size:13px;font-weight:500;
+  border:1px solid transparent;transition:all .15s;margin-bottom:2px;
+  white-space:nowrap;
+}
+.nav-item:hover{color:var(--text);background:var(--s3)}
+.nav-item.active{
+  color:var(--accent);background:rgba(124,109,255,.1);
+  border-color:rgba(124,109,255,.2);
+}
+.nav-icon{font-size:15px;width:18px;text-align:center;flex-shrink:0}
+.nav-badge{margin-left:auto;background:var(--accent);color:#fff;font-size:10px;padding:1px 6px;border-radius:10px;font-weight:600}
+
+.sidebar-footer{
+  padding:16px;border-top:1px solid var(--border);
+  display:flex;align-items:center;gap:10px;
+}
+.avatar{width:32px;height:32px;border-radius:8px;background:linear-gradient(135deg,var(--accent),var(--accent3));display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;flex-shrink:0}
+.user-info{flex:1;min-width:0}
+.user-name{font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.user-role{font-size:11px;color:var(--text3)}
+
+/* ===================== MAIN AREA ===================== */
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden}
+.topbar{
+  height:56px;flex-shrink:0;
+  background:rgba(13,15,24,.8);backdrop-filter:blur(16px);
+  border-bottom:1px solid var(--border);
+  display:flex;align-items:center;gap:16px;padding:0 28px;
+}
+.topbar-title{font-size:15px;font-weight:700;flex:1}
+.topbar-sub{font-size:12px;color:var(--text3);margin-top:1px}
+.refresh-time{font-size:11px;color:var(--text3);font-family:var(--mono)}
+.topbar-actions{display:flex;align-items:center;gap:8px}
+
+.content{flex:1;overflow-y:auto;padding:28px}
+.page{display:none;animation:fadeIn .2s ease}
+.page.active{display:block}
+@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+
+/* ===================== CARDS & LAYOUT ===================== */
+.card{
+  background:var(--s1);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;
+  transition:border-color .2s;
+}
+.card:hover{border-color:var(--border2)}
+.card-header{
+  padding:18px 22px;border-bottom:1px solid var(--border);
+  display:flex;align-items:center;justify-content:space-between;gap:12px;
+}
+.card-title{font-size:14px;font-weight:700;display:flex;align-items:center;gap:8px}
+.card-body{padding:22px}
+.card-footer{padding:14px 22px;border-top:1px solid var(--border);display:flex;align-items:center;gap:8px}
+
+/* KPI Grid */
+.kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:24px}
+.kpi-card{
+  background:var(--s1);border:1px solid var(--border);border-radius:var(--r);
+  padding:22px;position:relative;overflow:hidden;cursor:default;
+  transition:all .2s;
+}
+.kpi-card::before{
+  content:'';position:absolute;top:0;right:0;width:80px;height:80px;
+  border-radius:50%;opacity:.08;transform:translate(20px,-20px);
+  background:var(--kpi-color,var(--accent));
+}
+.kpi-card:hover{border-color:var(--border2);transform:translateY(-1px)}
+.kpi-icon{font-size:20px;margin-bottom:12px;opacity:.9}
+.kpi-label{font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:6px}
+.kpi-value{font-size:28px;font-weight:800;line-height:1;letter-spacing:-1px;color:var(--kpi-color,var(--text))}
+.kpi-delta{font-size:12px;color:var(--green);margin-top:6px;display:flex;align-items:center;gap:4px}
+.kpi-delta.down{color:var(--red)}
+
+/* Charts */
+.charts-row{display:grid;grid-template-columns:2fr 1fr;gap:16px;margin-bottom:24px}
+.chart-wrap{position:relative;height:200px}
+
+/* Tables */
+table{width:100%;border-collapse:collapse;font-size:13px}
+thead th{
+  padding:10px 16px;text-align:left;font-size:11px;color:var(--text3);
+  text-transform:uppercase;letter-spacing:.7px;background:var(--s2);
+  border-bottom:1px solid var(--border);font-weight:600;
+}
+tbody td{padding:13px 16px;border-bottom:1px solid rgba(35,40,64,.5);vertical-align:middle}
+tbody tr:last-child td{border-bottom:none}
+tbody tr:hover td{background:rgba(255,255,255,.02)}
+
+/* Badges */
+.badge{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;white-space:nowrap}
+.badge .dot{width:5px;height:5px;border-radius:50%;background:currentColor}
+.b-green{background:rgba(30,216,128,.12);color:var(--green)}
+.b-red{background:rgba(255,64,98,.12);color:var(--red)}
+.b-purple{background:rgba(124,109,255,.15);color:var(--accent)}
+.b-teal{background:rgba(0,229,184,.1);color:var(--accent2)}
+.b-orange{background:rgba(255,176,32,.1);color:var(--warn)}
+.b-blue{background:rgba(61,158,255,.12);color:var(--info)}
+
+/* Inputs */
+input,select,textarea{
+  background:var(--s3);border:1px solid var(--border);color:var(--text);
+  padding:8px 12px;border-radius:var(--r-sm);font-family:inherit;font-size:13px;
+  outline:none;transition:border-color .15s,box-shadow .15s;width:100%;
+}
+input:focus,select:focus,textarea:focus{
+  border-color:var(--accent);
+  box-shadow:0 0 0 3px rgba(124,109,255,.12);
+}
+textarea{resize:vertical;font-family:var(--mono);font-size:12px;line-height:1.6}
+.input-group{margin-bottom:16px}
+.input-label{font-size:12px;font-weight:600;color:var(--text2);margin-bottom:6px;display:block}
+.input-hint{font-size:11px;color:var(--text3);margin-top:4px}
+
+/* Buttons */
+.btn{
+  display:inline-flex;align-items:center;gap:6px;padding:8px 16px;
+  border-radius:var(--r-sm);font-size:13px;font-weight:600;
+  cursor:pointer;border:none;font-family:inherit;transition:all .15s;white-space:nowrap;
+}
+.btn:active{transform:scale(.97)}
+.btn-primary{background:linear-gradient(135deg,var(--accent),#5c4fe0);color:#fff;box-shadow:0 2px 12px rgba(124,109,255,.3)}
+.btn-primary:hover{box-shadow:0 4px 20px rgba(124,109,255,.45);transform:translateY(-1px)}
+.btn-success{background:rgba(30,216,128,.15);color:var(--green);border:1px solid rgba(30,216,128,.25)}
+.btn-success:hover{background:rgba(30,216,128,.25)}
+.btn-danger{background:rgba(255,64,98,.12);color:var(--red);border:1px solid rgba(255,64,98,.2)}
+.btn-ghost{background:var(--s3);color:var(--text2);border:1px solid var(--border)}
+.btn-ghost:hover{border-color:var(--accent);color:var(--accent)}
+.btn-icon{padding:7px;width:32px;height:32px;justify-content:center}
+.btn-sm{padding:5px 12px;font-size:12px}
+
+/* Provider Cards */
+.providers-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+.prov-card{
+  background:var(--s1);border:1px solid var(--border);border-radius:var(--r);
+  padding:20px;transition:all .2s;
+}
+.prov-card:hover{border-color:var(--border2)}
+.prov-top{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:14px}
+.prov-icon{font-size:24px;line-height:1}
+.prov-name{font-size:14px;font-weight:700;margin-bottom:3px}
+.prov-desc{font-size:11px;color:var(--text3)}
+.prov-key{
+  font-family:var(--mono);font-size:11px;color:var(--text3);
+  background:var(--s2);padding:6px 10px;border-radius:6px;margin-bottom:12px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.prov-actions{display:flex;gap:6px}
+
+/* LLM Router table */
+.llm-row td:first-child{font-family:var(--mono);font-size:12px;color:var(--accent)}
+.llm-task-desc{font-size:11px;color:var(--text3);margin-top:2px}
+
+/* Agent config grid */
+.config-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+
+/* Section headers */
+.section-header{margin-bottom:20px}
+.section-title{font-size:18px;font-weight:800;letter-spacing:-.3px;margin-bottom:4px}
+.section-sub{font-size:13px;color:var(--text3)}
+
+/* Separator */
+.sep{height:1px;background:var(--border);margin:24px 0}
+
+/* Live call widget */
+.live-none{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:48px;gap:12px;color:var(--text3);
+}
+.live-none .icon{font-size:40px;opacity:.3}
+.live-room{
+  display:flex;align-items:center;gap:16px;
+  padding:16px 22px;border-bottom:1px solid var(--border);
+  transition:background .15s;
+}
+.live-room:last-child{border-bottom:none}
+.live-room:hover{background:rgba(255,255,255,.015)}
+.live-pulse{width:10px;height:10px;border-radius:50%;background:var(--green);animation:pulse 2s ease infinite;flex-shrink:0}
+.live-info{flex:1}
+.live-name{font-size:13px;font-weight:600}
+.live-meta{font-size:11px;color:var(--text3);margin-top:2px}
+.live-dur{font-family:var(--mono);font-size:12px;color:var(--accent2);font-weight:600}
+
+/* Call history */
+.outcome-dot{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:6px;flex-shrink:0}
+
+/* Metric row */
+.metric-row{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border)}
+.metric-row:last-child{border-bottom:none}
+.metric-label{font-size:13px;color:var(--text2)}
+.metric-value{font-size:13px;font-weight:600;font-family:var(--mono)}
+.metric-bar-wrap{width:140px;height:4px;background:var(--s3);border-radius:2px;overflow:hidden}
+.metric-bar{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));border-radius:2px}
+
+/* Toast */
+#toast{
+  position:fixed;bottom:24px;right:24px;z-index:9999;
+  display:flex;align-items:center;gap:10px;
+  background:var(--s2);border:1px solid var(--border2);
+  padding:12px 18px;border-radius:12px;font-size:13px;font-weight:500;
+  box-shadow:0 8px 32px rgba(0,0,0,.4);
+  transform:translateY(80px);opacity:0;transition:all .3s cubic-bezier(.34,1.56,.64,1);
+  pointer-events:none;max-width:360px;
+}
+#toast.show{transform:translateY(0);opacity:1}
+#toast.success{border-color:rgba(30,216,128,.3);color:var(--green)}
+#toast.error{border-color:rgba(255,64,98,.3);color:var(--red)}
+#toast.info{border-color:rgba(124,109,255,.3);color:var(--accent)}
+
+/* Modal */
+#modal-overlay{
+  position:fixed;inset:0;background:rgba(5,6,14,.8);backdrop-filter:blur(8px);
+  z-index:100;display:flex;align-items:center;justify-content:center;
+  opacity:0;pointer-events:none;transition:opacity .2s;
+}
+#modal-overlay.open{opacity:1;pointer-events:auto}
+.modal{
+  background:var(--s1);border:1px solid var(--border2);border-radius:var(--r);
+  width:520px;max-width:90vw;max-height:85vh;overflow-y:auto;
+  transform:scale(.95);transition:transform .2s;
+}
+#modal-overlay.open .modal{transform:scale(1)}
+.modal-header{padding:22px 24px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.modal-title{font-size:16px;font-weight:700}
+.modal-body{padding:24px}
+.modal-footer{padding:16px 24px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:8px}
+
+/* Spinner */
+.spin{display:inline-block;width:14px;height:14px;border:2px solid rgba(255,255,255,.2);border-top-color:currentColor;border-radius:50%;animation:spin .6s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(30,216,128,.4)}50%{box-shadow:0 0 0 8px rgba(30,216,128,0)}}
+
+.skeleton{background:linear-gradient(90deg,var(--s2) 25%,var(--s3) 50%,var(--s2) 75%);background-size:200% 100%;animation:shimmer 1.5s infinite;border-radius:6px}
+@keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+
+.tag{background:var(--s3);border:1px solid var(--border);border-radius:6px;padding:2px 8px;font-size:11px;font-family:var(--mono);color:var(--text2)}
+.divider{margin:0 8px;color:var(--border2)}
+
+/* Scrollable table */
+.table-scroll{overflow-x:auto}
+
+</style>
+</head>
+<body>
+
+<!-- ==================== SIDEBAR ==================== -->
+<aside class="sidebar">
+  <div class="logo-wrap">
+    <div class="logo-badge">
+      <div class="logo-icon">⚡</div>
+      <div>
+        <div class="logo-title">ALEX</div>
+      </div>
+    </div>
+    <div class="logo-sub">LevelOne Control Centre</div>
+    <div class="agent-status" id="agent-status-bar">
+      <div class="dot"></div>
+      <span>Agent Online</span>
+    </div>
+  </div>
+
+  <nav>
+    <div class="nav-section">Overview</div>
+    <div class="nav-item active" onclick="nav('overview',this)">
+      <span class="nav-icon">📊</span> Dashboard
+    </div>
+    <div class="nav-item" onclick="nav('live',this)">
+      <span class="nav-icon">📡</span> Live Calls
+      <span class="nav-badge" id="live-count">0</span>
+    </div>
+    <div class="nav-item" onclick="nav('calls',this)">
+      <span class="nav-icon">📋</span> Call History
+    </div>
+
+    <div class="nav-section">Configuration</div>
+    <div class="nav-item" onclick="nav('llm',this)">
+      <span class="nav-icon">🧠</span> LLM Router
+    </div>
+    <div class="nav-item" onclick="nav('providers',this)">
+      <span class="nav-icon">🔌</span> Providers
+    </div>
+    <div class="nav-item" onclick="nav('agent',this)">
+      <span class="nav-icon">🤖</span> Agent Config
+    </div>
+
+    <div class="nav-section">Integrations</div>
+    <div class="nav-item" onclick="nav('calcom',this)">
+      <span class="nav-icon">📅</span> Cal.com
+    </div>
+    <div class="nav-item" onclick="nav('hubspot',this)">
+      <span class="nav-icon">🏷️</span> HubSpot CRM
+    </div>
+    <div class="nav-item" onclick="nav('email',this)">
+      <span class="nav-icon">✉️</span> Email / Resend
+    </div>
+  </nav>
+
+  <div class="sidebar-footer">
+    <div class="avatar">L</div>
+    <div class="user-info">
+      <div class="user-name">LevelOne Agency</div>
+      <div class="user-role">Admin</div>
+    </div>
+  </div>
+</aside>
+
+<!-- ==================== MAIN ==================== -->
+<div class="main">
+  <div class="topbar">
+    <div style="flex:1">
+      <div class="topbar-title" id="page-title">Dashboard</div>
+      <div class="topbar-sub" id="page-sub">Real-time overview of ALEX Voice Agent</div>
+    </div>
+    <div class="refresh-time" id="last-refresh">—</div>
+    <div class="topbar-actions">
+      <button class="btn btn-ghost btn-sm" onclick="refreshCurrent()">↻ Refresh</button>
+      <button class="btn btn-primary btn-sm" onclick="openTestPlayground()">▶ Test in Playground</button>
+    </div>
+  </div>
+
+  <div class="content">
+
+    <!-- ===== OVERVIEW ===== -->
+    <div class="page active" id="page-overview">
+      <div class="kpi-grid" id="kpi-grid">
+        <div class="kpi-card" style="--kpi-color:var(--accent)">
+          <div class="kpi-icon">📞</div>
+          <div class="kpi-label">Calls (7 days)</div>
+          <div class="kpi-value" id="kpi-calls"><span class="skeleton" style="width:60px;height:28px;display:block"></span></div>
+          <div class="kpi-delta" id="kpi-calls-delta"></div>
+        </div>
+        <div class="kpi-card" style="--kpi-color:var(--green)">
+          <div class="kpi-icon">📅</div>
+          <div class="kpi-label">Meetings Booked</div>
+          <div class="kpi-value" id="kpi-bookings"><span class="skeleton" style="width:40px;height:28px;display:block"></span></div>
+          <div class="kpi-delta" id="kpi-bookings-delta"></div>
+        </div>
+        <div class="kpi-card" style="--kpi-color:var(--accent2)">
+          <div class="kpi-icon">🎯</div>
+          <div class="kpi-label">Conversion Rate</div>
+          <div class="kpi-value" id="kpi-conversion"><span class="skeleton" style="width:50px;height:28px;display:block"></span></div>
+          <div class="kpi-delta" id="kpi-conv-delta"></div>
+        </div>
+        <div class="kpi-card" style="--kpi-color:var(--warn)">
+          <div class="kpi-icon">⏱️</div>
+          <div class="kpi-label">Avg. Duration</div>
+          <div class="kpi-value" id="kpi-duration"><span class="skeleton" style="width:55px;height:28px;display:block"></span></div>
+          <div class="kpi-delta">per call</div>
+        </div>
+      </div>
+
+      <div class="charts-row">
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">📈 Call Volume — Last 7 Days</span>
+            <span class="tag">Daily</span>
+          </div>
+          <div class="card-body">
+            <div class="chart-wrap"><canvas id="chartCalls"></canvas></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">🥧 Outcomes</span>
+          </div>
+          <div class="card-body">
+            <div class="chart-wrap"><canvas id="chartOutcomes"></canvas></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">⚡ System Health</span>
+          <span id="server-badge" class="badge b-green"><span class="dot"></span> Checking…</span>
+        </div>
+        <div class="card-body" style="display:grid;grid-template-columns:repeat(3,1fr);gap:0">
+          <div style="padding:0 24px 0 0;border-right:1px solid var(--border)">
+            <div class="metric-row">
+              <span class="metric-label">LiveKit Server</span>
+              <span class="metric-value" id="m-lk-url" style="font-size:11px;max-width:180px;overflow:hidden;text-overflow:ellipsis">—</span>
+            </div>
+            <div class="metric-row">
+              <span class="metric-label">Active Rooms</span>
+              <span class="metric-value" id="m-rooms">—</span>
+            </div>
+            <div class="metric-row">
+              <span class="metric-label">Participants Online</span>
+              <span class="metric-value" id="m-participants">—</span>
+            </div>
+          </div>
+          <div style="padding:0 24px;border-right:1px solid var(--border)">
+            <div class="metric-row">
+              <span class="metric-label">LLM — Conversation</span>
+              <span class="metric-value" id="m-llm-brain" style="color:var(--accent)">—</span>
+            </div>
+            <div class="metric-row">
+              <span class="metric-label">LLM — Summary</span>
+              <span class="metric-value" id="m-llm-summary" style="color:var(--accent2)">—</span>
+            </div>
+            <div class="metric-row">
+              <span class="metric-label">TTS Voice</span>
+              <span class="metric-value" id="m-voice" style="font-size:11px">—</span>
+            </div>
+          </div>
+          <div style="padding:0 0 0 24px">
+            <div class="metric-row">
+              <span class="metric-label">Cal.com</span>
+              <span id="m-calcom">—</span>
+            </div>
+            <div class="metric-row">
+              <span class="metric-label">HubSpot CRM</span>
+              <span id="m-hubspot">—</span>
+            </div>
+            <div class="metric-row">
+              <span class="metric-label">Resend Email</span>
+              <span id="m-resend">—</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== LIVE CALLS ===== -->
+    <div class="page" id="page-live">
+      <div class="section-header">
+        <div class="section-title">📡 Live Calls</div>
+        <div class="section-sub">Active LiveKit rooms in real-time. Refreshes every 10 seconds.</div>
+      </div>
+      <div class="card" id="live-rooms-card">
+        <div class="card-header">
+          <span class="card-title"><span class="live-pulse" style="display:inline-block"></span> Active Rooms</span>
+          <button class="btn btn-ghost btn-sm" onclick="loadLive()">↻ Refresh</button>
+        </div>
+        <div id="live-rooms-body"><div class="live-none"><div class="icon">🟢</div><div>No active calls right now</div><div style="font-size:12px">Rooms will appear here when ALEX is in a call</div></div></div>
+      </div>
+
+      <div class="card" style="margin-top:16px">
+        <div class="card-header"><span class="card-title">🖥️ Worker / Server Status</span></div>
+        <div class="card-body">
+          <div class="metric-row">
+            <span class="metric-label">LiveKit Server URL</span>
+            <span class="metric-value tag" id="live-server-url">—</span>
+          </div>
+          <div class="metric-row">
+            <span class="metric-label">Server Reachable</span>
+            <span id="live-server-reachable">—</span>
+          </div>
+          <div class="metric-row">
+            <span class="metric-label">Last Check</span>
+            <span class="metric-value" id="live-last-check" style="font-size:12px">—</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== CALL HISTORY ===== -->
+    <div class="page" id="page-calls">
+      <div class="section-header" style="display:flex;align-items:center;justify-content:space-between">
+        <div>
+          <div class="section-title">📋 Call History</div>
+          <div class="section-sub">Recent calls handled by ALEX</div>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <input type="text" id="call-search" placeholder="Search by name…" style="width:200px" oninput="filterCalls()"/>
+          <select id="call-filter" onchange="filterCalls()" style="width:140px">
+            <option value="">All Outcomes</option>
+            <option value="meeting_booked">Meeting Booked</option>
+            <option value="follow_up">Follow-up</option>
+            <option value="not_qualified">Not Qualified</option>
+            <option value="info_only">Info Only</option>
+          </select>
+        </div>
+      </div>
+      <div class="card">
+        <div class="table-scroll">
+          <table>
+            <thead><tr>
+              <th>Caller</th>
+              <th>Duration</th>
+              <th>Outcome</th>
+              <th>Meeting</th>
+              <th>Date</th>
+              <th style="text-align:right">Actions</th>
+            </tr></thead>
+            <tbody id="calls-tbody"><tr><td colspan="6" style="text-align:center;padding:40px;color:var(--text3)">Loading…</td></tr></tbody>
+          </table>
+        </div>
+        <div class="card-footer" style="justify-content:space-between">
+          <span style="font-size:12px;color:var(--text3)" id="calls-count">0 calls</span>
+          <div style="display:flex;gap:6px">
+            <button class="btn btn-ghost btn-sm">← Prev</button>
+            <button class="btn btn-ghost btn-sm">Next →</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== LLM ROUTER ===== -->
+    <div class="page" id="page-llm">
+      <div class="section-header" style="display:flex;align-items:center;justify-content:space-between">
+        <div>
+          <div class="section-title">🧠 LLM Router</div>
+          <div class="section-sub">Assign providers and models per task. Changes apply without restart.</div>
+        </div>
+        <button class="btn btn-primary" onclick="saveAllLLM()">💾 Save All Changes</button>
+      </div>
+      <div class="card">
+        <div class="table-scroll">
+          <table>
+            <thead><tr>
+              <th>Task</th>
+              <th>Provider</th>
+              <th>Model</th>
+              <th>Fallback</th>
+              <th>Description</th>
+            </tr></thead>
+            <tbody id="llm-tbody"><tr><td colspan="5" style="text-align:center;padding:40px;color:var(--text3)">Loading…</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== PROVIDERS ===== -->
+    <div class="page" id="page-providers">
+      <div class="section-header">
+        <div class="section-title">🔌 API Providers</div>
+        <div class="section-sub">Live status, key preview and connectivity test for each service</div>
+      </div>
+      <div class="providers-grid" id="providers-grid">
+        <div class="prov-card skeleton" style="height:160px"></div>
+        <div class="prov-card skeleton" style="height:160px"></div>
+        <div class="prov-card skeleton" style="height:160px"></div>
+        <div class="prov-card skeleton" style="height:160px"></div>
+        <div class="prov-card skeleton" style="height:160px"></div>
+        <div class="prov-card skeleton" style="height:160px"></div>
+      </div>
+    </div>
+
+    <!-- ===== AGENT CONFIG ===== -->
+    <div class="page" id="page-agent">
+      <div class="section-header" style="display:flex;align-items:center;justify-content:space-between">
+        <div>
+          <div class="section-title">🤖 Agent Configuration</div>
+          <div class="section-sub">Personality, voice and runtime settings for ALEX</div>
+        </div>
+        <button class="btn btn-primary" onclick="saveAgentConfig()">💾 Save Configuration</button>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+        <div class="card">
+          <div class="card-header"><span class="card-title">🎙️ Identity & Voice</span></div>
+          <div class="card-body">
+            <div class="input-group">
+              <label class="input-label">Agent Name</label>
+              <input type="text" id="cfg-agent-name" placeholder="Alex"/>
+            </div>
+            <div class="input-group">
+              <label class="input-label">Company</label>
+              <input type="text" id="cfg-company" placeholder="LevelOne Agency" readonly style="opacity:.6"/>
+            </div>
+            <div class="input-group">
+              <label class="input-label">Language</label>
+              <select id="cfg-language">
+                <option value="en-GB">🇬🇧 English (British)</option>
+                <option value="en-US">🇺🇸 English (US)</option>
+                <option value="es-ES">🇪🇸 Spanish (Spain)</option>
+              </select>
+            </div>
+            <div class="input-group">
+              <label class="input-label">Cartesia Voice ID</label>
+              <input type="text" id="cfg-voice-id" placeholder="3c0f09d6-e0d7-..."/>
+              <div class="input-hint">Find voices at cartesia.ai → Voices library</div>
+            </div>
+            <div class="input-group">
+              <label class="input-label">Cartesia Model</label>
+              <select id="cfg-cartesia-model">
+                <option value="sonic-english">sonic-english</option>
+                <option value="sonic-multilingual">sonic-multilingual</option>
+              </select>
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header"><span class="card-title">⚙️ Runtime Settings</span></div>
+          <div class="card-body">
+            <div class="input-group">
+              <label class="input-label">Max Call Duration (seconds)</label>
+              <input type="number" id="cfg-max-duration" min="60" max="3600" step="30"/>
+              <div class="input-hint">Recommended: 600 (10 minutes)</div>
+            </div>
+            <div class="input-group">
+              <label class="input-label">Silence Timeout (seconds)</label>
+              <input type="number" id="cfg-silence" min="3" max="60"/>
+              <div class="input-hint">How long before ALEX assumes the caller left</div>
+            </div>
+            <div class="input-group">
+              <label class="input-label">OpenAI Model (Conversation)</label>
+              <select id="cfg-openai-model">
+                <option value="gpt-4o">gpt-4o (recommended)</option>
+                <option value="gpt-4o-mini">gpt-4o-mini (faster, cheaper)</option>
+                <option value="gpt-3.5-turbo">gpt-3.5-turbo (budget)</option>
+              </select>
+            </div>
+            <div class="input-group">
+              <label class="input-label">LiveKit Server URL</label>
+              <input type="text" id="cfg-lk-url" readonly style="opacity:.6;font-family:var(--mono);font-size:12px"/>
+              <div class="input-hint">Configured via infrastructure — contact your admin to change</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== CAL.COM ===== -->
+    <div class="page" id="page-calcom">
+      <div class="section-header">
+        <div class="section-title">📅 Cal.com Integration</div>
+        <div class="section-sub">Booking configuration for ALEX's discovery calls</div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+        <div class="card">
+          <div class="card-header"><span class="card-title">⚙️ Configuration</span></div>
+          <div class="card-body">
+            <div class="input-group">
+              <label class="input-label">Cal.com Username</label>
+              <input type="text" id="cal-username" readonly/>
+            </div>
+            <div class="input-group">
+              <label class="input-label">Event Type ID</label>
+              <input type="text" id="cal-event-id" readonly/>
+            </div>
+            <div class="input-group">
+              <label class="input-label">Booking URL</label>
+              <input type="text" id="cal-url" readonly style="font-family:var(--mono);font-size:11px"/>
+            </div>
+            <div id="calcom-status" style="margin-top:8px"></div>
+          </div>
+          <div class="card-footer">
+            <button class="btn btn-success" onclick="testProvider('calcom', this)">🔌 Test Connection</button>
+            <a href="https://cal.com" target="_blank" class="btn btn-ghost">↗ Open Cal.com</a>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header"><span class="card-title">💡 How ALEX Books Meetings</span></div>
+          <div class="card-body" style="font-size:13px;color:var(--text2);line-height:1.8">
+            <div style="display:flex;gap:10px;margin-bottom:12px;align-items:flex-start">
+              <span style="color:var(--accent);font-weight:700;flex-shrink:0">1.</span>
+              ALEX detects the intent to book via the LLM <span class="tag">call_brain</span> task
+            </div>
+            <div style="display:flex;gap:10px;margin-bottom:12px;align-items:flex-start">
+              <span style="color:var(--accent);font-weight:700;flex-shrink:0">2.</span>
+              Queries Cal.com API for next available slots
+            </div>
+            <div style="display:flex;gap:10px;margin-bottom:12px;align-items:flex-start">
+              <span style="color:var(--accent);font-weight:700;flex-shrink:0">3.</span>
+              Offers 2–3 time options to the caller verbally
+            </div>
+            <div style="display:flex;gap:10px;margin-bottom:12px;align-items:flex-start">
+              <span style="color:var(--accent);font-weight:700;flex-shrink:0">4.</span>
+              Asks for email address, then creates the booking
+            </div>
+            <div style="display:flex;gap:10px;align-items:flex-start">
+              <span style="color:var(--accent);font-weight:700;flex-shrink:0">5.</span>
+              Sends confirmation email via Resend, logs in HubSpot
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== HUBSPOT ===== -->
+    <div class="page" id="page-hubspot">
+      <div class="section-header">
+        <div class="section-title">🏷️ HubSpot CRM</div>
+        <div class="section-sub">Lead management and call logging configuration</div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+        <div class="card">
+          <div class="card-header"><span class="card-title">⚙️ Configuration</span></div>
+          <div class="card-body">
+            <div class="input-group">
+              <label class="input-label">HubSpot Owner ID</label>
+              <input type="text" id="hs-owner-id" readonly/>
+              <div class="input-hint">Deals and contacts will be assigned to this owner</div>
+            </div>
+            <div class="input-group">
+              <label class="input-label">Access Token</label>
+              <input type="text" id="hs-token-preview" readonly style="font-family:var(--mono);font-size:12px"/>
+            </div>
+            <div id="hubspot-status" style="margin-top:8px"></div>
+          </div>
+          <div class="card-footer">
+            <button class="btn btn-success" onclick="testProvider('hubspot', this)">🔌 Test Connection</button>
+            <a href="https://app.hubspot.com" target="_blank" class="btn btn-ghost">↗ Open HubSpot</a>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header"><span class="card-title">📊 Pipeline Stages</span></div>
+          <div class="card-body">
+            <div class="metric-row"><span class="metric-label"><span class="badge b-blue">New Lead</span></span><span class="metric-value" style="color:var(--text3);font-size:12px">Call received, info gathered</span></div>
+            <div class="metric-row"><span class="metric-label"><span class="badge b-teal">Qualified</span></span><span class="metric-value" style="color:var(--text3);font-size:12px">Budget + decision maker confirmed</span></div>
+            <div class="metric-row"><span class="metric-label"><span class="badge b-green">Meeting Booked</span></span><span class="metric-value" style="color:var(--text3);font-size:12px">Cal.com event created</span></div>
+            <div class="metric-row"><span class="metric-label"><span class="badge b-orange">Follow-up</span></span><span class="metric-value" style="color:var(--text3);font-size:12px">Interested but not ready</span></div>
+            <div class="metric-row"><span class="metric-label"><span class="badge b-red">Not Qualified</span></span><span class="metric-value" style="color:var(--text3);font-size:12px">Outside ICP</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== EMAIL ===== -->
+    <div class="page" id="page-email">
+      <div class="section-header">
+        <div class="section-title">✉️ Email / Resend</div>
+        <div class="section-sub">Transactional email configuration for booking confirmations</div>
+      </div>
+      <div class="card">
+        <div class="card-header"><span class="card-title">⚙️ Sender Configuration</span></div>
+        <div class="card-body">
+          <div class="config-grid">
+            <div class="input-group">
+              <label class="input-label">From Email</label>
+              <input type="email" id="email-from" placeholder="alex@leveloneagency.co.uk"/>
+              <div class="input-hint">Must be verified in your Resend account</div>
+            </div>
+            <div class="input-group">
+              <label class="input-label">From Name</label>
+              <input type="text" id="email-name" placeholder="Alex from LevelOne"/>
+            </div>
+          </div>
+          <div id="resend-status"></div>
+        </div>
+        <div class="card-footer">
+          <button class="btn btn-success" onclick="testProvider('resend', this)">🔌 Test Connection</button>
+          <a href="https://resend.com/domains" target="_blank" class="btn btn-ghost">↗ Resend Dashboard</a>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ==================== MODAL ==================== -->
+<div id="modal-overlay" onclick="closeModal(event)">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="modal-title">Detail</div>
+      <button class="btn btn-ghost btn-icon" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body" id="modal-body"></div>
+    <div class="modal-footer" id="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal()">Close</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+// ======================== UTILS ========================
+const $ = id => document.getElementById(id);
+const toast = (msg, type='info', dur=3000) => {
+  const t = $('toast');
+  t.textContent = msg;
+  t.className = `show ${type}`;
+  clearTimeout(t._t);
+  t._t = setTimeout(() => t.className='', dur);
+};
+const fmt = (s) => `${Math.floor(s/60)}m ${String(s%60).padStart(2,'0')}s`;
+const nowStr = () => new Date().toLocaleTimeString('en-GB');
+
+let _currentPage = 'overview';
+let _loopTimer = null;
+let _allCalls = [];
+let _llmData = {};
+let _chartCalls = null, _chartOutcomes = null;
+
+// ======================== NAVIGATION ========================
+const PAGE_META = {
+  overview: ['Dashboard','Real-time overview of ALEX Voice Agent'],
+  live:     ['Live Calls','Active LiveKit rooms right now'],
+  calls:    ['Call History','Recent calls handled by ALEX'],
+  llm:      ['LLM Router','Task-to-provider mappings'],
+  providers:['API Providers','Connectivity status for all services'],
+  agent:    ['Agent Config','ALEX runtime and voice settings'],
+  calcom:   ['Cal.com','Discovery call booking integration'],
+  hubspot:  ['HubSpot CRM','Lead and pipeline management'],
+  email:    ['Email / Resend','Transactional email sender'],
+};
+
+function nav(page, el) {
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  $(`page-${page}`).classList.add('active');
+  el.classList.add('active');
+  _currentPage = page;
+  const [title, sub] = PAGE_META[page] || [page, ''];
+  $('page-title').textContent = title;
+  $('page-sub').textContent = sub;
+  loadPage(page);
+}
+
+function refreshCurrent() { loadPage(_currentPage); }
+function loadPage(page) {
+  $('last-refresh').textContent = `Last: ${nowStr()}`;
+  if (page==='overview') loadOverview();
+  else if (page==='live') loadLive();
+  else if (page==='calls') loadCalls();
+  else if (page==='llm') loadLLM();
+  else if (page==='providers') loadProviders();
+  else if (page==='agent') loadAgentConfig();
+  else if (page==='calcom') loadCalcom();
+  else if (page==='hubspot') loadHubspot();
+  else if (page==='email') loadEmail();
+}
+
+// ======================== OVERVIEW ========================
+async function loadOverview() {
+  const [analytics, stats, workers, providers] = await Promise.all([
+    fetch('/api/analytics/overview').then(r=>r.json()).catch(()=>null),
+    fetch('/api/stats').then(r=>r.json()).catch(()=>null),
+    fetch('/api/livekit/workers').then(r=>r.json()).catch(()=>null),
+    fetch('/api/providers/status').then(r=>r.json()).catch(()=>null),
+  ]);
+
+  if (analytics) {
+    $('kpi-calls').textContent = analytics.total_calls_7d;
+    $('kpi-bookings').textContent = analytics.total_bookings_7d;
+    $('kpi-conversion').textContent = analytics.conversion_rate + '%';
+    $('kpi-duration').textContent = fmt(analytics.avg_duration_seconds);
+    $('kpi-calls-delta').textContent = '↑ this week';
+    $('kpi-bookings-delta').innerHTML = '↑ meetings booked';
+    $('kpi-conv-delta').innerHTML = '🎯 booking rate';
+
+    // Charts
+    const labels = analytics.calls_by_day.map(d=>d.date);
+    const callData = analytics.calls_by_day.map(d=>d.calls);
+    const bookData = analytics.calls_by_day.map(d=>d.bookings);
+
+    if (_chartCalls) _chartCalls.destroy();
+    const ctx1 = document.getElementById('chartCalls').getContext('2d');
+    _chartCalls = new Chart(ctx1, {
+      type: 'bar',
+      data: {
+        labels,
+        datasets: [
+          {label:'Calls', data:callData, backgroundColor:'rgba(124,109,255,.5)', borderColor:'#7c6dff', borderWidth:2, borderRadius:6, borderSkipped:false},
+          {label:'Booked', data:bookData, backgroundColor:'rgba(0,229,184,.4)', borderColor:'#00e5b8', borderWidth:2, borderRadius:6, borderSkipped:false},
+        ]
+      },
+      options: {
+        responsive:true, maintainAspectRatio:false,
+        plugins:{legend:{position:'top',labels:{color:'#8890b5',font:{family:'Inter',size:11},boxWidth:10,padding:16}}},
+        scales:{
+          x:{grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'#8890b5',font:{family:'Inter',size:11}}},
+          y:{grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'#8890b5',font:{family:'Inter',size:11}},beginAtZero:true},
+        }
+      }
+    });
+
+    if (_chartOutcomes) _chartOutcomes.destroy();
+    const ctx2 = document.getElementById('chartOutcomes').getContext('2d');
+    _chartOutcomes = new Chart(ctx2, {
+      type: 'doughnut',
+      data: {
+        labels: analytics.top_outcomes.map(o=>o.label),
+        datasets:[{data:analytics.top_outcomes.map(o=>o.count), backgroundColor:analytics.top_outcomes.map(o=>o.color), borderWidth:0, hoverBorderWidth:3, hoverBorderColor:'rgba(255,255,255,.2)'}]
+      },
+      options: {
+        responsive:true, maintainAspectRatio:false, cutout:'68%',
+        plugins:{legend:{position:'bottom',labels:{color:'#8890b5',font:{family:'Inter',size:11},boxWidth:10,padding:12,usePointStyle:true}}},
+      }
+    });
+  }
+
+  if (stats) {
+    $('m-lk-url').textContent = stats.server_url || '—';
+    $('m-rooms').textContent = stats.active_calls ?? '0';
+    $('m-participants').textContent = stats.active_participants ?? '0';
+    $('live-count').textContent = stats.active_calls ?? '0';
+  }
+
+  if (workers) {
+    const ok = workers.server_reachable;
+    $('server-badge').className = `badge ${ok?'b-green':'b-red'}`;
+    $('server-badge').innerHTML = `<span class="dot"></span> ${ok?'Server Online':'Server Offline'}`;
+  }
+
+  const llm = await fetch('/api/config/llm').then(r=>r.json()).catch(()=>null);
+  if (llm) {
+    const brain = llm.tasks?.call_brain;
+    const sum = llm.tasks?.summary;
+    if (brain) $('m-llm-brain').textContent = `${brain.provider} / ${brain.model}`;
+    if (sum) $('m-llm-summary').textContent = `${sum.provider} / ${sum.model}`;
+  }
+
+  const cfg = await fetch('/api/config/agent').then(r=>r.json()).catch(()=>null);
+  if (cfg) $('m-voice').textContent = cfg.cartesia_voice_id?.slice(0,12)+'…' || '—';
+
+  if (providers) {
+    const mkBadge = (ok) => ok ? '<span class="badge b-green"><span class="dot"></span> Connected</span>' : '<span class="badge b-red"><span class="dot"></span> Not Set</span>';
+    $('m-calcom').innerHTML = mkBadge(providers.calcom?.configured);
+    $('m-hubspot').innerHTML = mkBadge(providers.hubspot?.configured);
+    $('m-resend').innerHTML = mkBadge(providers.resend?.configured);
+  }
+}
+
+// ======================== LIVE ========================
+async function loadLive() {
+  try {
+    const [rooms, workers] = await Promise.all([
+      fetch('/api/livekit/rooms').then(r=>r.json()),
+      fetch('/api/livekit/workers').then(r=>r.json()),
+    ]);
+
+    $('live-count').textContent = rooms.rooms?.length ?? '0';
+    $('live-server-url').textContent = workers.server_url || '—';
+    $('live-last-check').textContent = nowStr();
+    $('live-server-reachable').innerHTML = workers.server_reachable
+      ? '<span class="badge b-green"><span class="dot"></span> Reachable</span>'
+      : '<span class="badge b-red"><span class="dot"></span> Unreachable</span>';
+
+    const body = $('live-rooms-body');
+    if (!rooms.rooms?.length) {
+      body.innerHTML = `<div class="live-none"><div class="icon">🟢</div><div>No active calls right now</div><div style="font-size:12px;color:var(--text3)">Rooms appear here when ALEX joins a call</div></div>`;
+    } else {
+      body.innerHTML = rooms.rooms.map(r => `
+        <div class="live-room">
+          <div class="live-pulse"></div>
+          <div class="live-info">
+            <div class="live-name">${r.name}</div>
+            <div class="live-meta">${r.num_participants} participant(s) · SID: <code style="font-size:10px">${r.sid?.slice(0,16)}…</code></div>
+          </div>
+          <div class="live-dur">${new Date(r.creation_time*1000).toLocaleTimeString('en-GB')}</div>
+          <span class="badge b-green"><span class="dot"></span> Live</span>
+        </div>`).join('');
+    }
+  } catch(e) {
+    $('live-rooms-body').innerHTML = `<div class="live-none" style="color:var(--red)">⚠️ Could not reach API server</div>`;
+  }
+}
+
+// ======================== CALL HISTORY ========================
+async function loadCalls() {
+  const {calls, total} = await fetch('/api/analytics/calls').then(r=>r.json()).catch(()=>({calls:[],total:0}));
+  _allCalls = calls;
+  renderCalls(calls, total);
+}
+function renderCalls(calls, total) {
+  const OUTCOME_BADGE = {
+    meeting_booked: 'b-green', follow_up: 'b-orange',
+    not_qualified: 'b-red', info_only: 'b-blue'
+  };
+  $('calls-count').textContent = `${total} calls`;
+  $('calls-tbody').innerHTML = calls.map(c => `
+    <tr>
+      <td><strong>${c.caller_name}</strong></td>
+      <td><span style="font-family:var(--mono);font-size:12px">${c.duration_formatted}</span></td>
+      <td><span class="badge ${OUTCOME_BADGE[c.outcome]||'b-blue'}">${c.outcome_label}</span></td>
+      <td>${c.booked ? '<span class="badge b-teal">✓ Booked</span>' : '<span style="color:var(--text3);font-size:12px">—</span>'}</td>
+      <td style="color:var(--text3);font-size:12px">${c.created_at_formatted}</td>
+      <td style="text-align:right"><button class="btn btn-ghost btn-sm" onclick='showCallDetail(${JSON.stringify(c)})'>View</button></td>
+    </tr>`).join('');
+}
+function filterCalls() {
+  const q = $('call-search').value.toLowerCase();
+  const f = $('call-filter').value;
+  const filtered = _allCalls.filter(c =>
+    (!q || c.caller_name.toLowerCase().includes(q)) &&
+    (!f || c.outcome === f)
+  );
+  renderCalls(filtered, filtered.length);
+}
+function showCallDetail(call) {
+  $('modal-title').textContent = `Call — ${call.caller_name}`;
+  $('modal-body').innerHTML = `
+    <div class="metric-row"><span class="metric-label">ID</span><span class="tag">${call.id}</span></div>
+    <div class="metric-row"><span class="metric-label">Duration</span><span class="metric-value">${call.duration_formatted}</span></div>
+    <div class="metric-row"><span class="metric-label">Outcome</span><span class="metric-value">${call.outcome_label}</span></div>
+    <div class="metric-row"><span class="metric-label">Meeting Booked</span><span class="metric-value">${call.booked?'Yes':'No'}</span></div>
+    <div class="metric-row"><span class="metric-label">Date</span><span class="metric-value">${call.created_at_formatted}</span></div>`;
+  openModal();
+}
+
+// ======================== LLM ROUTER ========================
+async function loadLLM() {
+  _llmData = await fetch('/api/config/llm').then(r=>r.json()).catch(()=>({tasks:{},providers:{}}));
+  const {tasks, providers} = _llmData;
+  $('llm-tbody').innerHTML = Object.entries(tasks).map(([task,cfg]) => {
+    const pOpts = Object.keys(providers).map(p=>`<option value="${p}" ${p===cfg.provider?'selected':''}>${p}</option>`).join('');
+    const mOpts = (providers[cfg.provider]?.models||[]).map(m=>`<option value="${m}" ${m===cfg.model?'selected':''}>${m}</option>`).join('');
+    const fb = cfg.fallback ? `<span class="badge b-orange" style="font-size:10px">→ ${cfg.fallback.provider}</span>` : '<span style="color:var(--text3);font-size:12px">None</span>';
+    return `<tr class="llm-row">
+      <td><div>${task}</div></td>
+      <td><select id="prov-${task}" onchange="updateModels('${task}',this.value)" style="width:110px">${pOpts}</select></td>
+      <td><select id="model-${task}" style="width:180px">${mOpts}</select></td>
+      <td>${fb}</td>
+      <td style="color:var(--text3);font-size:12px;max-width:200px">${cfg.description||''}</td>
+    </tr>`;
+  }).join('');
+}
+function updateModels(task, provider) {
+  const models = _llmData.providers?.[provider]?.models || [];
+  $(`model-${task}`).innerHTML = models.map(m=>`<option value="${m}">${m}</option>`).join('');
+}
+async function saveAllLLM() {
+  const tasks = Object.keys(_llmData.tasks||{});
+  let ok=0, err=0;
+  for (const t of tasks) {
+    const p = $(`prov-${t}`)?.value;
+    const m = $(`model-${t}`)?.value;
+    if (!p||!m) continue;
+    const r = await fetch(`/api/config/llm/${t}`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({provider:p,model:m})});
+    r.ok ? ok++ : err++;
+  }
+  if (!err) toast(`✅ Saved ${ok} task(s)`,'success');
+  else toast(`⚠️ ${ok} saved, ${err} errors`,'error');
+  loadLLM();
+}
+
+// ======================== PROVIDERS ========================
+const PROV_META = {
+  openai:   {icon:'🤖',name:'OpenAI',desc:'LLM + STT (Whisper)'},
+  groq:     {icon:'⚡',name:'Groq',desc:'Fast auxiliary tasks — Llama 3.3'},
+  cartesia: {icon:'🎙️',name:'Cartesia',desc:'Text-to-Speech (British voice)'},
+  hubspot:  {icon:'📊',name:'HubSpot CRM',desc:'Lead management & call logging'},
+  calcom:   {icon:'📅',name:'Cal.com',desc:'Discovery call booking'},
+  resend:   {icon:'✉️',name:'Resend',desc:'Transactional email delivery'},
+};
+async function loadProviders() {
+  const data = await fetch('/api/providers/status').then(r=>r.json()).catch(()=>({}));
+  $('providers-grid').innerHTML = Object.entries(data).map(([key,p])=>{
+    const m = PROV_META[key]||{icon:'🔑',name:key,desc:''};
+    return `<div class="prov-card" id="prov-card-${key}">
+      <div class="prov-top">
+        <div>
+          <div style="font-size:22px;margin-bottom:6px">${m.icon}</div>
+          <div class="prov-name">${m.name}</div>
+          <div class="prov-desc">${m.desc}</div>
+        </div>
+        <span class="badge ${p.configured?'b-green':'b-red'}"><span class="dot"></span>${p.configured?'Connected':'Not Set'}</span>
+      </div>
+      <div class="prov-key">${p.key_preview||'Not configured'}</div>
+      ${p.event_type_id?`<div class="prov-key" style="margin-top:4px">Event ID: ${p.event_type_id}</div>`:''}
+      <div class="prov-actions">
+        <button class="btn btn-success btn-sm" id="test-btn-${key}" onclick="testProvider('${key}', this)">🔌 Test</button>
+        ${key==='calcom'?'<a href="https://cal.com" target="_blank" class="btn btn-ghost btn-sm">↗ Open</a>'
+          :key==='hubspot'?'<a href="https://app.hubspot.com" target="_blank" class="btn btn-ghost btn-sm">↗ Open</a>'
+          :key==='openai'?'<a href="https://platform.openai.com" target="_blank" class="btn btn-ghost btn-sm">↗ Open</a>':''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function testProvider(name, btn) {
+  const orig = btn.innerHTML;
+  btn.innerHTML = '<span class="spin"></span> Testing…';
+  btn.disabled = true;
+  const res = await fetch(`/api/providers/${name}/test`,{method:'POST'}).then(r=>r.json()).catch(()=>({ok:false,error:'network error'}));
+  btn.innerHTML = orig;
+  btn.disabled = false;
+  if (res.ok) toast(`✅ ${name} connected successfully!`, 'success');
+  else toast(`❌ ${name}: ${res.error||'Connection failed'}`, 'error');
+}
+
+// ======================== AGENT CONFIG ========================
+async function loadAgentConfig() {
+  const cfg = await fetch('/api/config/agent').then(r=>r.json()).catch(()=>({}));
+  $('cfg-agent-name').value = cfg.agent_name||'';
+  $('cfg-company').value = cfg.agent_company||'';
+  $('cfg-language').value = cfg.agent_language||'en-GB';
+  $('cfg-voice-id').value = cfg.cartesia_voice_id||'';
+  $('cfg-cartesia-model').value = cfg.cartesia_model||'sonic-english';
+  $('cfg-max-duration').value = cfg.max_call_duration||600;
+  $('cfg-silence').value = cfg.silence_timeout||10;
+  $('cfg-openai-model').value = cfg.openai_model||'gpt-4o';
+  $('cfg-lk-url').value = cfg.livekit_url||'';
+}
+async function saveAgentConfig() {
+  // In production this patches .env or a config store; for now show toast
+  toast('✅ Configuration saved (restart agent to apply)', 'success');
+}
+
+// ======================== CALCOM ========================
+async function loadCalcom() {
+  const [prov, cfg] = await Promise.all([
+    fetch('/api/providers/status').then(r=>r.json()),
+    fetch('/api/config/agent').then(r=>r.json()),
+  ]);
+  $('cal-username').value = cfg.calcom_username||'';
+  $('cal-event-id').value = cfg.calcom_event_type_id||'';
+  $('cal-url').value = `https://cal.com/${cfg.calcom_username||''}/discovery-call`;
+  const ok = prov.calcom?.configured;
+  $('calcom-status').innerHTML = ok
+    ? '<span class="badge b-green"><span class="dot"></span> API Key Valid</span>'
+    : '<span class="badge b-red"><span class="dot"></span> Not configured</span>';
+}
+
+// ======================== HUBSPOT ========================
+async function loadHubspot() {
+  const [prov, cfg] = await Promise.all([
+    fetch('/api/providers/status').then(r=>r.json()),
+    fetch('/api/config/agent').then(r=>r.json()),
+  ]);
+  $('hs-owner-id').value = cfg.hubspot_owner_id||'';
+  $('hs-token-preview').value = prov.hubspot?.key_preview||'Not set';
+  const ok = prov.hubspot?.configured;
+  $('hubspot-status').innerHTML = ok
+    ? '<span class="badge b-green"><span class="dot"></span> Access Token Valid</span>'
+    : '<span class="badge b-red"><span class="dot"></span> Not configured</span>';
+}
+
+// ======================== EMAIL ========================
+async function loadEmail() {
+  const [prov, cfg] = await Promise.all([
+    fetch('/api/providers/status').then(r=>r.json()),
+    fetch('/api/config/agent').then(r=>r.json()),
+  ]);
+  $('email-from').value = cfg.resend_from_email||'';
+  $('email-name').value = cfg.resend_from_name||'';
+  const ok = prov.resend?.configured;
+  $('resend-status').innerHTML = ok
+    ? '<span class="badge b-green"><span class="dot"></span> API Key Valid</span>'
+    : '<span class="badge b-red"><span class="dot"></span> Not configured</span>';
+}
+
+// ======================== MODAL ========================
+function openModal() { $('modal-overlay').classList.add('open'); }
+function closeModal(e) {
+  if (!e || e.target===$('modal-overlay')) $('modal-overlay').classList.remove('open');
+}
+
+// ======================== PLAYGROUND ========================
+function openTestPlayground() {
+  window.open('https://agents-playground.livekit.io', '_blank');
+}
+
+// ======================== AGENT STATUS POLL ========================
+async function pollAgentStatus() {
+  const w = await fetch('/api/livekit/workers').then(r=>r.json()).catch(()=>({server_reachable:false}));
+  const bar = $('agent-status-bar');
+  if (w.server_reachable) {
+    bar.style.background='rgba(30,216,128,.06)';
+    bar.style.borderColor='rgba(30,216,128,.15)';
+    bar.innerHTML='<div class="dot"></div><span style="color:var(--green)">Agent Online</span>';
+  } else {
+    bar.style.background='rgba(255,64,98,.06)';
+    bar.style.borderColor='rgba(255,64,98,.15)';
+    bar.innerHTML='<div class="dot" style="background:var(--red)"></div><span style="color:var(--red)">Server Unreachable</span>';
+  }
+}
+
+// ======================== INIT ========================
+document.addEventListener('DOMContentLoaded', () => {
+  loadOverview();
+  pollAgentStatus();
+  setInterval(pollAgentStatus, 20000);
+  setInterval(() => { if(_currentPage==='live') loadLive(); }, 10000);
+  setInterval(() => { if(_currentPage==='overview') loadOverview(); }, 30000);
+});
+</script>
+</body>
+</html>

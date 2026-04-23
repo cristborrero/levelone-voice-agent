@@ -1,0 +1,19 @@
+# LLM Router Configuration
+# Maps task types to providers. Env vars (LLM_*_PROVIDER) override these values.
+
+providers:
+  openai:
+    model: gpt-4o
+    temperature: 0.7
+    max_tokens: 1024
+  groq:
+    model: llama-3.3-70b-versatile
+    temperature: 0.3
+    max_tokens: 2048
+
+task_routing:
+  conversation: openai
+  summarization: groq
+  classification: groq
+  lead_scoring: groq
+  email_draft: groq

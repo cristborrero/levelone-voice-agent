@@ -1,0 +1,33 @@
+# LiveKit Server Configuration
+# Deploy this on your Contabo VPS alongside the agent
+
+port: 7880
+rtc:
+  tcp_port: 7881
+  udp_port: 7882
+  use_external_ip: true
+
+# Replace with your actual domain/IP
+# For production: use your domain with TLS termination via Nginx
+keys:
+  your_livekit_api_key: your_livekit_api_secret
+
+room:
+  auto_create: true
+  max_participants: 2  # Agent + caller only
+  empty_timeout: 60
+
+sip:
+  port: 5060
+  # Outbound SIP trunk to Telnyx
+  outbound_trunk:
+    address: sip.telnyx.com:5060
+    transport: tcp
+    numbers:
+      - +441234567890  # Your Telnyx number
+    auth_username: your_sip_username
+    auth_password: your_sip_password
+  # Inbound dispatch rule — route all inbound to agent worker
+  dispatch_rules:
+    - type: dispatch_rule_individual_dispatch
+      room_prefix: "call-"
