@@ -4,7 +4,7 @@ After=network.target
 
 [Service]
 Type=simple
-User=ubuntu
+User=root
 WorkingDirectory=/opt/voice-agent
 EnvironmentFile=/opt/voice-agent/.env
 ExecStart=/opt/voice-agent/.venv/bin/voice-agent
