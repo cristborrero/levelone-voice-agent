@@ -1,5 +1,9 @@
 """
 LLM Router — dispatches tasks to the right provider/model based on config.
+
+Agency-agent personas (config/agent_personas/*.txt) are injected as the
+system message for each task. call_brain is exempt — ALEX's system prompt
+is managed by voice_agent.py directly.
 """
 from __future__ import annotations
 
@@ -109,21 +113,39 @@ class LLMRouter:
     """
 
     _CONFIG_PATH = Path(__file__).parent.parent.parent / "config" / "llm_profiles.yaml"
+    _CONFIG_DIR = Path(__file__).parent.parent.parent / "config"
 
     def __init__(self, config_path: Path | None = None) -> None:
         self._config_path = config_path or self._CONFIG_PATH
         self._config: dict = {}
         self._clients: dict[str, LLMClient] = {}
+        self._persona_cache: dict[str, str] = {}
         self._load_config()
 
     def _load_config(self) -> None:
         with open(self._config_path) as f:
             self._config = yaml.safe_load(f)
 
+    def _load_persona(self, persona_path: str) -> str:
+        """Load and cache a persona file relative to the config directory."""
+        if persona_path not in self._persona_cache:
+            full_path = self._CONFIG_DIR / persona_path
+            self._persona_cache[persona_path] = full_path.read_text(encoding="utf-8")
+        return self._persona_cache[persona_path]
+
+    def _inject_persona(
+        self, messages: list[dict[str, str]], persona_text: str
+    ) -> list[dict[str, str]]:
+        """Prepend persona as system message if no system message exists yet."""
+        if messages and messages[0].get("role") == "system":
+            return messages
+        return [{"role": "system", "content": persona_text}, *messages]
+
     def reload(self) -> None:
-        """Hot-reload config without restarting the process."""
+        """Hot-reload config and persona files without restarting the process."""
         self._load_config()
         self._clients.clear()
+        self._persona_cache.clear()
 
     def _get_client(self, provider: str) -> LLMClient:
         if provider not in self._clients:
@@ -147,6 +169,11 @@ class LLMRouter:
         provider = task_cfg["provider"]
         model = task_cfg["model"]
         fallback = task_cfg.get("fallback")
+        persona_path = task_cfg.get("persona")
+
+        if persona_path:
+            persona_text = self._load_persona(persona_path)
+            messages = self._inject_persona(messages, persona_text)
 
         try:
             client = self._get_client(provider)

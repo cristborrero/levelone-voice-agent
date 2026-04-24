@@ -2,7 +2,7 @@ tasks:
   call_brain:
     provider: openai
     model: gpt-4o
-    description: "Main conversation LLM for live calls"
+    description: "Main conversation LLM for live calls — ALEX persona injected by voice_agent.py directly"
     fallback:
       provider: groq
       model: llama-3.3-70b-versatile
@@ -10,25 +10,29 @@ tasks:
   summary:
     provider: groq
     model: llama-3.3-70b-versatile
-    description: "Call summary generation (cheap/fast)"
+    description: "Post-call structured debrief — Sales Coach persona"
+    persona: agent_personas/summary.txt
     fallback: null
 
   classification:
     provider: groq
     model: llama-3.3-70b-versatile
-    description: "Lead stage classification"
+    description: "Lead pipeline stage classification — Deal Strategist persona"
+    persona: agent_personas/classification.txt
     fallback: null
 
   email_draft:
     provider: groq
     model: llama-3.3-70b-versatile
-    description: "Post-call email drafting"
+    description: "Post-call follow-up email — Outbound Strategist persona"
+    persona: agent_personas/email_draft.txt
     fallback: null
 
   lead_scoring:
     provider: groq
     model: llama-3.3-70b-versatile
-    description: "Lead scoring and qualification"
+    description: "Lead score 0-100 — Pipeline Analyst persona"
+    persona: agent_personas/lead_scoring.txt
     fallback: null
 
 providers:
