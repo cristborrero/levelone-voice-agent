@@ -5,14 +5,17 @@ Mounts under /api/ prefix.
 from __future__ import annotations
 
 import os
-import random
 from datetime import datetime, timedelta, timezone
 from typing import Optional
 
 import httpx
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
+from sqlalchemy import case, func, select
 
+from app.core.enums import LeadScore
+from app.db.models import CallSession
+from app.db.session import get_session_factory
 from app.llm.router import get_router
 
 router = APIRouter(prefix="/api")
@@ -286,13 +289,54 @@ async def get_agent_config():
 
 
 # ---------------------------------------------------------------------------
-# Analytics endpoints (realistic mock — replace with DB queries later)
+# Analytics endpoints
 # ---------------------------------------------------------------------------
+
+_OUTCOME_LABELS = {
+    "meeting_booked": "Meeting Booked",
+    "follow_up": "Follow-up",
+    "not_qualified": "Not Qualified",
+    "info_only": "Info Only",
+}
+
+
+def _derive_outcome(booking_uid: str | None, lead_score: str | None) -> str:
+    if booking_uid:
+        return "meeting_booked"
+    if lead_score in (LeadScore.HOT, LeadScore.WARM):
+        return "follow_up"
+    if lead_score in (LeadScore.COLD, LeadScore.UNQUALIFIED):
+        return "not_qualified"
+    return "info_only"
+
 
 @router.get("/analytics/overview")
 async def analytics_overview():
-    """Summary analytics for the dashboard overview."""
-    # In production these come from the DB; for now realistic mock
+    """Summary analytics for the dashboard overview — real DB data."""
+    cutoff = datetime.now(timezone.utc) - timedelta(days=7)
+    factory = get_session_factory()
+
+    async with factory() as db:
+        day_rows = (await db.execute(
+            select(
+                func.date(CallSession.started_at).label("day"),
+                func.count().label("calls"),
+                func.sum(
+                    case((CallSession.calcom_booking_uid.isnot(None), 1), else_=0)
+                ).label("bookings"),
+                func.avg(CallSession.duration_seconds).label("avg_duration"),
+            )
+            .where(CallSession.started_at >= cutoff)
+            .group_by(func.date(CallSession.started_at))
+            .order_by(func.date(CallSession.started_at))
+        )).all()
+
+        outcome_rows = (await db.execute(
+            select(CallSession.calcom_booking_uid, CallSession.lead_score)
+            .where(CallSession.started_at >= cutoff)
+        )).all()
+
+    by_day = {r.day: r for r in day_rows}
     today = datetime.now(timezone.utc)
     calls_last_7_days = []
     total_calls = 0
@@ -301,9 +345,11 @@ async def analytics_overview():
 
     for i in range(6, -1, -1):
         day = today - timedelta(days=i)
-        calls = random.randint(3, 18)
-        bookings = random.randint(1, max(1, calls // 3))
-        avg_dur = random.randint(120, 480)
+        day_str = day.strftime("%Y-%m-%d")
+        row = by_day.get(day_str)
+        calls = row.calls if row else 0
+        bookings = row.bookings if row else 0
+        avg_dur = int(row.avg_duration or 0) if row else 0
         calls_last_7_days.append({
             "date": day.strftime("%a"),
             "calls": calls,
@@ -313,6 +359,10 @@ async def analytics_overview():
         total_calls += calls
         total_bookings += bookings
         total_duration += avg_dur * calls
+
+    outcome_counts: dict[str, int] = {k: 0 for k in _OUTCOME_LABELS}
+    for r in outcome_rows:
+        outcome_counts[_derive_outcome(r.calcom_booking_uid, r.lead_score)] += 1
 
     conversion_rate = round((total_bookings / total_calls) * 100, 1) if total_calls else 0
     avg_duration_secs = int(total_duration / total_calls) if total_calls else 0
@@ -324,43 +374,43 @@ async def analytics_overview():
         "avg_duration_seconds": avg_duration_secs,
         "calls_by_day": calls_last_7_days,
         "top_outcomes": [
-            {"label": "Meeting Booked", "count": total_bookings, "color": "#6c63ff"},
-            {"label": "Follow-up", "count": total_calls // 3, "color": "#00d4aa"},
-            {"label": "Not Qualified", "count": total_calls // 5, "color": "#ff4757"},
-            {"label": "Info Only", "count": total_calls // 4, "color": "#ffa502"},
+            {"label": "Meeting Booked", "count": outcome_counts["meeting_booked"], "color": "#6c63ff"},
+            {"label": "Follow-up", "count": outcome_counts["follow_up"], "color": "#00d4aa"},
+            {"label": "Not Qualified", "count": outcome_counts["not_qualified"], "color": "#ff4757"},
+            {"label": "Info Only", "count": outcome_counts["info_only"], "color": "#ffa502"},
         ],
     }
 
 
 @router.get("/analytics/calls")
 async def recent_calls():
-    """Recent call log for the calls table."""
-    names = ["James Whitmore", "Sophie Chen", "Marcus Reid", "Amara Okafor",
-             "David Lim", "Priya Sharma", "Tom Bridges", "Emma Walsh"]
-    outcomes = ["meeting_booked", "follow_up", "not_qualified", "info_only"]
-    outcome_labels = {"meeting_booked": "Meeting Booked", "follow_up": "Follow-up",
-                      "not_qualified": "Not Qualified", "info_only": "Info Only"}
+    """Recent call log — real DB data."""
+    factory = get_session_factory()
+    async with factory() as db:
+        sessions = (await db.execute(
+            select(CallSession).order_by(CallSession.started_at.desc()).limit(12)
+        )).scalars().all()
 
     calls = []
-    for i in range(12):
-        duration = random.randint(90, 540)
-        outcome = random.choice(outcomes)
-        mins = duration // 60
-        secs = duration % 60
-        created_at = datetime.now(timezone.utc) - timedelta(
-            hours=random.randint(0, 72), minutes=random.randint(0, 59)
+    for s in sessions:
+        outcome = _derive_outcome(s.calcom_booking_uid, s.lead_score)
+        duration = s.duration_seconds or 0
+        mins, secs = divmod(duration, 60)
+        created_at = (
+            s.started_at.replace(tzinfo=timezone.utc)
+            if s.started_at.tzinfo is None
+            else s.started_at
         )
         calls.append({
-            "id": f"call_{i+1:04d}",
-            "caller_name": random.choice(names),
+            "id": s.id,
+            "caller_name": s.caller_number,
             "duration_formatted": f"{mins}m {secs:02d}s",
             "duration_seconds": duration,
             "outcome": outcome,
-            "outcome_label": outcome_labels[outcome],
+            "outcome_label": _OUTCOME_LABELS[outcome],
             "booked": outcome == "meeting_booked",
             "created_at": created_at.isoformat(),
             "created_at_formatted": created_at.strftime("%d %b, %H:%M"),
         })
 
-    calls.sort(key=lambda c: c["created_at"], reverse=True)
     return {"calls": calls, "total": len(calls)}
