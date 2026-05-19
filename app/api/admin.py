@@ -403,7 +403,7 @@ async def recent_calls():
         )
         calls.append({
             "id": s.id,
-            "caller_name": s.caller_number,
+            "caller_name": s.caller_name or s.caller_number,
             "duration_formatted": f"{mins}m {secs:02d}s",
             "duration_seconds": duration,
             "outcome": outcome,

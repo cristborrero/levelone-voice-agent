@@ -19,6 +19,7 @@ class CallSession(Base):
     hubspot_deal_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
     calcom_booking_uid: Mapped[str | None] = mapped_column(String(128), nullable=True)
     lead_score: Mapped[str | None] = mapped_column(String(16), nullable=True)
+    caller_name: Mapped[str | None] = mapped_column(String(128), nullable=True)
     started_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
     ended_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     duration_seconds: Mapped[int | None] = mapped_column(Integer, nullable=True)

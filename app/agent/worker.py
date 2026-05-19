@@ -18,7 +18,8 @@ from app.agent.prompt import build_system_prompt
 from app.core.call_orchestrator import ALEX_TOOLS
 from app.core.config import get_settings
 from app.core.logging import configure_logging, get_logger, set_call_id, set_trace_id
-from app.db.session import init_db
+from app.db.models import CallSession
+from app.db.session import get_session_factory, init_db
 
 logger = get_logger(__name__)
 
@@ -64,6 +65,16 @@ async def entrypoint(ctx: JobContext) -> None:
         caller_number=caller_number,
         livekit_room=ctx.room.name,
     )
+
+    # Persist session to DB so analytics has a record from call start
+    db_factory = get_session_factory()
+    async with db_factory() as db:
+        db.add(CallSession(
+            id=call_id,
+            caller_number=caller_number,
+            livekit_room=ctx.room.name,
+        ))
+        await db.commit()
 
     session = AgentSession[CallContext](
         vad=silero.VAD.load(),

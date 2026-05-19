@@ -19,6 +19,8 @@ from app.agent.context import CallContext
 from app.booking.calcom import CalComClient, BookingResult
 from app.core.logging import get_logger
 from app.crm.hubspot import HubSpotClient, ContactPayload
+from app.db.models import CallSession
+from app.db.session import get_session_factory
 from app.email.resend_client import EmailClient
 
 logger = get_logger(__name__)
@@ -345,6 +347,9 @@ async def end_call_and_log(
                 email=ctx.email, name=ctx.contact_name, summary=summary
             ))
 
+        # Flush final state to DB
+        asyncio.create_task(_persist_session(ctx, outcome, duration))
+
         logger.info("call_logged", outcome=outcome, contact_id=contact_id, duration=duration)
         return "ok"
 
@@ -353,6 +358,32 @@ async def end_call_and_log(
         return "ok"  # Always return ok — don't block the agent goodbye
     finally:
         await hs.aclose()
+
+
+async def _persist_session(ctx: CallContext, outcome: str, duration: int) -> None:
+    """Update CallSession in DB with final call state."""
+    from sqlalchemy import select
+    outcome_to_lead_score = {
+        "meeting_booked": "hot",
+        "follow_up": "warm",
+        "not_qualified": "cold",
+        "info_only": "cold",
+    }
+    factory = get_session_factory()
+    try:
+        async with factory() as db:
+            row = await db.get(CallSession, ctx.call_id)
+            if row:
+                row.ended_at = datetime.now(timezone.utc)
+                row.duration_seconds = duration
+                row.caller_name = ctx.contact_name
+                row.lead_score = outcome_to_lead_score.get(outcome)
+                row.hubspot_contact_id = ctx.hubspot_contact_id
+                row.calcom_booking_uid = ctx.calcom_booking_uid
+                row.stage = ctx.stage.value if ctx.stage else "ended"
+                await db.commit()
+    except Exception as exc:
+        logger.error("persist_session_error", error=str(exc))
 
 
 async def _send_followup_email(email: str, name: str, summary: str) -> None:

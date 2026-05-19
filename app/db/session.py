@@ -34,6 +34,14 @@ def get_session_factory() -> async_sessionmaker[AsyncSession]:
 async def init_db() -> None:
     async with _get_engine().begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
+        # Additive migrations — safe to re-run; SQLite raises OperationalError if column exists
+        for sql in [
+            "ALTER TABLE call_sessions ADD COLUMN caller_name VARCHAR(128)",
+        ]:
+            try:
+                await conn.execute(__import__("sqlalchemy").text(sql))
+            except Exception:
+                pass
 
 
 async def get_session() -> AsyncGenerator[AsyncSession, None]:
