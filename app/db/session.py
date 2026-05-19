@@ -3,7 +3,6 @@ from collections.abc import AsyncGenerator
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 from app.core.config import get_settings
-from app.db.models import Base
 
 _engine = None
 _session_factory: async_sessionmaker[AsyncSession] | None = None
@@ -32,17 +31,21 @@ def get_session_factory() -> async_sessionmaker[AsyncSession]:
 
 
 async def init_db() -> None:
-    async with _get_engine().begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
-        # Additive migrations — safe to re-run; SQLite raises OperationalError if column exists
-        for sql in [
-            "ALTER TABLE call_sessions ADD COLUMN caller_name VARCHAR(128)",
-            "ALTER TABLE call_sessions ADD COLUMN status VARCHAR(16) DEFAULT 'ringing'",
-        ]:
-            try:
-                await conn.execute(__import__("sqlalchemy").text(sql))
-            except Exception:
-                pass
+    """
+    Apply all pending Alembic migrations at startup.
+    Safe to call on every startup — Alembic tracks applied revisions.
+    """
+    import asyncio
+    from alembic import command
+    from alembic.config import Config
+
+    def _run_migrations() -> None:
+        cfg = Config("alembic.ini")
+        cfg.set_main_option("sqlalchemy.url", get_settings().database_url)
+        command.upgrade(cfg, "head")
+
+    # Run in a thread to avoid blocking the event loop
+    await asyncio.to_thread(_run_migrations)
 
 
 async def get_session() -> AsyncGenerator[AsyncSession, None]:

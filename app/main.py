@@ -13,12 +13,25 @@ logger = get_logger(__name__)
 
 
 def create_app() -> FastAPI:
+    from contextlib import asynccontextmanager
     from pathlib import Path
     from fastapi.responses import FileResponse
     from fastapi.staticfiles import StaticFiles
     from app.api.admin import router as admin_router
 
-    app = FastAPI(title="LevelOne Voice Agent", version="0.1.0", docs_url=None, redoc_url=None)
+    @asynccontextmanager
+    async def lifespan(app: FastAPI):
+        await init_db()
+        logger.info("app_started")
+        yield
+
+    app = FastAPI(
+        title="LevelOne Voice Agent",
+        version="0.1.0",
+        docs_url=None,
+        redoc_url=None,
+        lifespan=lifespan,
+    )
 
     app.add_middleware(
         CORSMiddleware,
@@ -42,11 +55,6 @@ def create_app() -> FastAPI:
     @app.get("/health")
     async def health():
         return {"status": "healthy", "service": "voice-agent"}
-
-    @app.on_event("startup")
-    async def on_startup():
-        await init_db()
-        logger.info("app_started")
 
     return app
 

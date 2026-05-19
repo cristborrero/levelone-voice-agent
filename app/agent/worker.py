@@ -4,10 +4,12 @@ ALEX Agent Worker — LiveKit entrypoint.
 Connects: OpenAI LLM + Cartesia TTS + Silero VAD + STT
 Integrations: Cal.com (booking), HubSpot (CRM), Resend (email)
 """
+import asyncio
 import uuid
 
 from livekit import agents, rtc
 from livekit.agents import AutoSubscribe, JobContext, WorkerOptions, cli
+from livekit.agents import llm as lk_llm
 from livekit.agents.voice import AgentSession, Agent
 from livekit.plugins import cartesia as lk_cartesia
 from livekit.plugins import openai as lk_openai
@@ -18,7 +20,7 @@ from app.agent.prompt import build_system_prompt
 from app.core.call_orchestrator import ALEX_TOOLS
 from app.core.config import get_settings
 from app.core.logging import configure_logging, get_logger, set_call_id, set_trace_id
-from app.db.models import CallSession
+from app.db.models import CallMessage, CallSession
 from app.db.session import get_session_factory, init_db
 
 logger = get_logger(__name__)
@@ -39,6 +41,20 @@ class AlexAgent(Agent):
             'Good morning, LevelOne Agency, Alex speaking<break time="200ms"/>. How can I help you today?'
         )
         await self.session.say(greeting, allow_interruptions=True)
+
+    @agents.utils.log_exceptions(logger=get_logger(__name__))
+    def on_user_speech_committed(self, msg: lk_llm.ChatMessage) -> None:
+        content = msg.content if isinstance(msg.content, str) else str(msg.content)
+        asyncio.create_task(
+            _persist_message(self._call_ctx.call_id, role="user", content=content)
+        )
+
+    @agents.utils.log_exceptions(logger=get_logger(__name__))
+    def on_agent_speech_committed(self, msg: lk_llm.ChatMessage) -> None:
+        content = msg.content if isinstance(msg.content, str) else str(msg.content)
+        asyncio.create_task(
+            _persist_message(self._call_ctx.call_id, role="assistant", content=content)
+        )
 
 
 async def entrypoint(ctx: JobContext) -> None:
@@ -106,9 +122,27 @@ async def entrypoint(ctx: JobContext) -> None:
         logger.info("call_ended", call_id=call_id)
 
 
+async def _persist_message(call_id: str, role: str, content: str) -> None:
+    """Write a conversation turn to call_messages. Fire-and-forget via create_task."""
+    if not content or not content.strip():
+        return
+    try:
+        factory = get_session_factory()
+        async with factory() as db:
+            db.add(CallMessage(
+                session_id=call_id,
+                role=role,
+                content=content.strip(),
+            ))
+            await db.commit()
+    except Exception as exc:
+        logger.error("persist_message_error", error=str(exc), call_id=call_id, role=role)
+
+
 def main() -> None:
+    import asyncio
     configure_logging()
-    init_db()
+    asyncio.get_event_loop().run_until_complete(init_db())
 
     cli.run_app(
         WorkerOptions(
