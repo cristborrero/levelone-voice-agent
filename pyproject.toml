@@ -37,6 +37,7 @@ dependencies = [
     # Utils
     "python-dateutil>=2.9.0",
     "tenacity>=9.0.0",
+    "cryptography>=42.0.0",  # Ed25519 webhook signature verification (Telnyx)
 ]
 
 [project.optional-dependencies]

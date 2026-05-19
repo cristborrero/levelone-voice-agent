@@ -39,7 +39,7 @@ class Settings(BaseSettings):
     telnyx_api_key: str
     telnyx_app_id: str
     telnyx_phone_number: str
-    telnyx_webhook_secret: str = ""
+    telnyx_webhook_public_key: str = ""  # Ed25519 public key from Telnyx portal → Webhooks
 
     # -------------------------------------------------------------------------
     # OpenAI

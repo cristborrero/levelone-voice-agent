@@ -13,7 +13,8 @@ class CallSession(Base):
 
     id: Mapped[str] = mapped_column(String(64), primary_key=True)
     caller_number: Mapped[str] = mapped_column(String(32))
-    livekit_room: Mapped[str] = mapped_column(String(128))
+    livekit_room: Mapped[str] = mapped_column(String(128), default="")
+    status: Mapped[str] = mapped_column(String(16), default="ringing")  # ringing | active | ended
     stage: Mapped[str] = mapped_column(String(32), default="greeting")
     hubspot_contact_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
     hubspot_deal_id: Mapped[str | None] = mapped_column(String(64), nullable=True)

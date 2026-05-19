@@ -37,6 +37,7 @@ async def init_db() -> None:
         # Additive migrations — safe to re-run; SQLite raises OperationalError if column exists
         for sql in [
             "ALTER TABLE call_sessions ADD COLUMN caller_name VARCHAR(128)",
+            "ALTER TABLE call_sessions ADD COLUMN status VARCHAR(16) DEFAULT 'ringing'",
         ]:
             try:
                 await conn.execute(__import__("sqlalchemy").text(sql))
