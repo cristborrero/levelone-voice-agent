@@ -297,9 +297,92 @@ textarea{resize:vertical;font-family:var(--mono);font-size:12px;line-height:1.6}
 /* Scrollable table */
 .table-scroll{overflow-x:auto}
 
+/* ===================== LOGIN SCREEN ===================== */
+#login-overlay{
+  position:fixed;inset:0;z-index:9999;
+  background:var(--bg);
+  display:flex;align-items:center;justify-content:center;
+}
+#login-overlay.hidden{display:none}
+.login-box{
+  width:100%;max-width:380px;padding:48px 40px;
+  background:var(--s1);border:1px solid var(--border);border-radius:20px;
+  box-shadow:0 32px 80px rgba(0,0,0,.6);
+  position:relative;overflow:hidden;
+}
+.login-box::before{
+  content:'';position:absolute;top:-60px;left:-60px;
+  width:200px;height:200px;
+  background:radial-gradient(circle,rgba(124,109,255,.25) 0%,transparent 70%);
+  pointer-events:none;
+}
+.login-logo{
+  display:flex;align-items:center;gap:12px;margin-bottom:32px;
+}
+.login-logo-icon{
+  width:44px;height:44px;border-radius:12px;
+  background:linear-gradient(135deg,var(--accent),var(--accent2));
+  display:flex;align-items:center;justify-content:center;
+  font-size:22px;box-shadow:0 0 24px rgba(124,109,255,.4);
+}
+.login-logo-text{font-size:20px;font-weight:800;letter-spacing:-.4px}
+.login-logo-sub{font-size:12px;color:var(--text3);margin-top:1px}
+.login-title{font-size:22px;font-weight:800;margin-bottom:6px}
+.login-sub{font-size:13px;color:var(--text2);margin-bottom:28px}
+.login-field{margin-bottom:16px}
+.login-field label{display:block;font-size:12px;font-weight:600;color:var(--text2);margin-bottom:6px;text-transform:uppercase;letter-spacing:.6px}
+.login-field input{
+  width:100%;padding:12px 14px;background:var(--s3);
+  border:1px solid var(--border2);border-radius:var(--r-sm);
+  color:var(--text);font-size:14px;font-family:var(--font);
+  outline:none;transition:border-color .15s;
+}
+.login-field input:focus{border-color:var(--accent)}
+.login-btn{
+  width:100%;padding:13px;margin-top:8px;
+  background:linear-gradient(135deg,var(--accent),#5a4dd4);
+  color:#fff;font-size:14px;font-weight:700;
+  border:none;border-radius:var(--r-sm);
+  cursor:pointer;transition:opacity .15s;letter-spacing:.2px;
+}
+.login-btn:hover{opacity:.9}
+.login-btn:disabled{opacity:.5;cursor:not-allowed}
+.login-error{
+  margin-top:14px;padding:10px 14px;
+  background:rgba(255,64,98,.1);border:1px solid rgba(255,64,98,.3);
+  border-radius:var(--r-sm);font-size:13px;color:var(--red);
+  display:none;
+}
+.login-error.visible{display:block}
+
 </style>
 </head>
 <body>
+
+<!-- ==================== LOGIN OVERLAY ==================== -->
+<div id="login-overlay">
+  <div class="login-box">
+    <div class="login-logo">
+      <div class="login-logo-icon">⚡</div>
+      <div>
+        <div class="login-logo-text">ALEX</div>
+        <div class="login-logo-sub">LevelOne Control Centre</div>
+      </div>
+    </div>
+    <div class="login-title">Welcome back</div>
+    <div class="login-sub">Sign in to access the admin panel</div>
+    <div class="login-field">
+      <label for="login-username">Username</label>
+      <input id="login-username" type="text" placeholder="admin" autocomplete="username"/>
+    </div>
+    <div class="login-field">
+      <label for="login-password">Password</label>
+      <input id="login-password" type="password" placeholder="••••••••" autocomplete="current-password"/>
+    </div>
+    <button class="login-btn" id="login-btn" onclick="doLogin()">Sign In</button>
+    <div class="login-error" id="login-error">Invalid username or password.</div>
+  </div>
+</div>
 
 <!-- ==================== SIDEBAR ==================== -->
 <aside class="sidebar">
@@ -359,6 +442,7 @@ textarea{resize:vertical;font-family:var(--mono);font-size:12px;line-height:1.6}
       <div class="user-name">LevelOne Agency</div>
       <div class="user-role">Admin</div>
     </div>
+    <button class="btn btn-icon btn-ghost" title="Sign out" onclick="logout()" style="margin-left:auto;flex-shrink:0">🚪</button>
   </div>
 </aside>
 
@@ -874,10 +958,10 @@ function loadPage(page) {
 // ======================== OVERVIEW ========================
 async function loadOverview() {
   const [analytics, stats, workers, providers] = await Promise.all([
-    fetch('/api/analytics/overview').then(r=>r.json()).catch(()=>null),
-    fetch('/api/stats').then(r=>r.json()).catch(()=>null),
-    fetch('/api/livekit/workers').then(r=>r.json()).catch(()=>null),
-    fetch('/api/providers/status').then(r=>r.json()).catch(()=>null),
+    authFetch('/api/analytics/overview').then(r=>r.json()).catch(()=>null),
+    authFetch('/api/stats').then(r=>r.json()).catch(()=>null),
+    authFetch('/api/livekit/workers').then(r=>r.json()).catch(()=>null),
+    authFetch('/api/providers/status').then(r=>r.json()).catch(()=>null),
   ]);
 
   if (analytics) {
@@ -943,7 +1027,7 @@ async function loadOverview() {
     $('server-badge').innerHTML = `<span class="dot"></span> ${ok?'Server Online':'Server Offline'}`;
   }
 
-  const llm = await fetch('/api/config/llm').then(r=>r.json()).catch(()=>null);
+  const llm = await authFetch('/api/config/llm').then(r=>r.json()).catch(()=>null);
   if (llm) {
     const brain = llm.tasks?.call_brain;
     const sum = llm.tasks?.summary;
@@ -951,7 +1035,7 @@ async function loadOverview() {
     if (sum) $('m-llm-summary').textContent = `${sum.provider} / ${sum.model}`;
   }
 
-  const cfg = await fetch('/api/config/agent').then(r=>r.json()).catch(()=>null);
+  const cfg = await authFetch('/api/config/agent').then(r=>r.json()).catch(()=>null);
   if (cfg) $('m-voice').textContent = cfg.cartesia_voice_id?.slice(0,12)+'…' || '—';
 
   if (providers) {
@@ -966,8 +1050,8 @@ async function loadOverview() {
 async function loadLive() {
   try {
     const [rooms, workers] = await Promise.all([
-      fetch('/api/livekit/rooms').then(r=>r.json()),
-      fetch('/api/livekit/workers').then(r=>r.json()),
+      authFetch('/api/livekit/rooms').then(r=>r.json()),
+      authFetch('/api/livekit/workers').then(r=>r.json()),
     ]);
 
     $('live-count').textContent = rooms.rooms?.length ?? '0';
@@ -999,7 +1083,7 @@ async function loadLive() {
 
 // ======================== CALL HISTORY ========================
 async function loadCalls() {
-  const {calls, total} = await fetch('/api/analytics/calls').then(r=>r.json()).catch(()=>({calls:[],total:0}));
+  const {calls, total} = await authFetch('/api/analytics/calls').then(r=>r.json()).catch(()=>({calls:[],total:0}));
   _allCalls = calls;
   renderCalls(calls, total);
 }
@@ -1041,7 +1125,7 @@ function showCallDetail(call) {
 
 // ======================== LLM ROUTER ========================
 async function loadLLM() {
-  _llmData = await fetch('/api/config/llm').then(r=>r.json()).catch(()=>({tasks:{},providers:{}}));
+  _llmData = await authFetch('/api/config/llm').then(r=>r.json()).catch(()=>({tasks:{},providers:{}}));
   const {tasks, providers} = _llmData;
   $('llm-tbody').innerHTML = Object.entries(tasks).map(([task,cfg]) => {
     const pOpts = Object.keys(providers).map(p=>`<option value="${p}" ${p===cfg.provider?'selected':''}>${p}</option>`).join('');
@@ -1085,7 +1169,7 @@ const PROV_META = {
   resend:   {icon:'✉️',name:'Resend',desc:'Transactional email delivery'},
 };
 async function loadProviders() {
-  const data = await fetch('/api/providers/status').then(r=>r.json()).catch(()=>({}));
+  const data = await authFetch('/api/providers/status').then(r=>r.json()).catch(()=>({}));
   $('providers-grid').innerHTML = Object.entries(data).map(([key,p])=>{
     const m = PROV_META[key]||{icon:'🔑',name:key,desc:''};
     return `<div class="prov-card" id="prov-card-${key}">
@@ -1122,7 +1206,7 @@ async function testProvider(name, btn) {
 
 // ======================== AGENT CONFIG ========================
 async function loadAgentConfig() {
-  const cfg = await fetch('/api/config/agent').then(r=>r.json()).catch(()=>({}));
+  const cfg = await authFetch('/api/config/agent').then(r=>r.json()).catch(()=>({}));
   $('cfg-agent-name').value = cfg.agent_name||'';
   $('cfg-company').value = cfg.agent_company||'';
   $('cfg-language').value = cfg.agent_language||'en-GB';
@@ -1141,8 +1225,8 @@ async function saveAgentConfig() {
 // ======================== CALCOM ========================
 async function loadCalcom() {
   const [prov, cfg] = await Promise.all([
-    fetch('/api/providers/status').then(r=>r.json()),
-    fetch('/api/config/agent').then(r=>r.json()),
+    authFetch('/api/providers/status').then(r=>r.json()),
+    authFetch('/api/config/agent').then(r=>r.json()),
   ]);
   $('cal-username').value = cfg.calcom_username||'';
   $('cal-event-id').value = cfg.calcom_event_type_id||'';
@@ -1156,8 +1240,8 @@ async function loadCalcom() {
 // ======================== HUBSPOT ========================
 async function loadHubspot() {
   const [prov, cfg] = await Promise.all([
-    fetch('/api/providers/status').then(r=>r.json()),
-    fetch('/api/config/agent').then(r=>r.json()),
+    authFetch('/api/providers/status').then(r=>r.json()),
+    authFetch('/api/config/agent').then(r=>r.json()),
   ]);
   $('hs-owner-id').value = cfg.hubspot_owner_id||'';
   $('hs-token-preview').value = prov.hubspot?.key_preview||'Not set';
@@ -1170,8 +1254,8 @@ async function loadHubspot() {
 // ======================== EMAIL ========================
 async function loadEmail() {
   const [prov, cfg] = await Promise.all([
-    fetch('/api/providers/status').then(r=>r.json()),
-    fetch('/api/config/agent').then(r=>r.json()),
+    authFetch('/api/providers/status').then(r=>r.json()),
+    authFetch('/api/config/agent').then(r=>r.json()),
   ]);
   $('email-from').value = cfg.resend_from_email||'';
   $('email-name').value = cfg.resend_from_name||'';
@@ -1194,7 +1278,7 @@ function openTestPlayground() {
 
 // ======================== AGENT STATUS POLL ========================
 async function pollAgentStatus() {
-  const w = await fetch('/api/livekit/workers').then(r=>r.json()).catch(()=>({server_reachable:false}));
+  const w = await authFetch('/api/livekit/workers').then(r=>r.json()).catch(()=>({server_reachable:false}));
   const bar = $('agent-status-bar');
   if (w.server_reachable) {
     bar.style.background='rgba(30,216,128,.06)';
@@ -1207,13 +1291,79 @@ async function pollAgentStatus() {
   }
 }
 
+// ======================== AUTH ========================
+const TOKEN_KEY = 'alex_dashboard_token';
+
+function getToken() { return localStorage.getItem(TOKEN_KEY); }
+function setToken(t) { localStorage.setItem(TOKEN_KEY, t); }
+function clearToken() { localStorage.removeItem(TOKEN_KEY); }
+
+async function authFetch(url, opts={}) {
+  const token = getToken();
+  const headers = {...(opts.headers||{}), 'Authorization': `Bearer ${token}`};
+  const res = await fetch(url, {...opts, headers});
+  if (res.status === 401) { logout(); return new Response(JSON.stringify({}), {status:401}); }
+  return res;
+}
+
+async function doLogin() {
+  const btn = $('login-btn');
+  const err = $('login-error');
+  const u = $('login-username').value.trim();
+  const p = $('login-password').value;
+  if (!u || !p) return;
+  btn.disabled = true;
+  btn.textContent = 'Signing in…';
+  err.classList.remove('visible');
+  try {
+    const res = await fetch('/api/auth/login', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({username: u, password: p}),
+    });
+    if (!res.ok) throw new Error('invalid');
+    const data = await res.json();
+    setToken(data.access_token);
+    $('login-overlay').classList.add('hidden');
+    initDashboard();
+  } catch {
+    err.classList.add('visible');
+    btn.disabled = false;
+    btn.textContent = 'Sign In';
+  }
+}
+
+function logout() {
+  clearToken();
+  $('login-overlay').classList.remove('hidden');
+  $('login-username').value = '';
+  $('login-password').value = '';
+  $('login-btn').disabled = false;
+  $('login-btn').textContent = 'Sign In';
+}
+
+// Allow Enter key to submit login form
+['login-username','login-password'].forEach(id => {
+  document.getElementById(id)?.addEventListener('keydown', e => {
+    if (e.key === 'Enter') doLogin();
+  });
+});
+
 // ======================== INIT ========================
-document.addEventListener('DOMContentLoaded', () => {
+function initDashboard() {
   loadOverview();
   pollAgentStatus();
   setInterval(pollAgentStatus, 20000);
   setInterval(() => { if(_currentPage==='live') loadLive(); }, 10000);
   setInterval(() => { if(_currentPage==='overview') loadOverview(); }, 30000);
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  if (getToken()) {
+    $('login-overlay').classList.add('hidden');
+    initDashboard();
+  }
+  // Otherwise login overlay is visible by default
 });
 </script>
 </body>

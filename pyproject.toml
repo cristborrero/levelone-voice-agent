@@ -38,6 +38,8 @@ dependencies = [
     "python-dateutil>=2.9.0",
     "tenacity>=9.0.0",
     "cryptography>=42.0.0",  # Ed25519 webhook signature verification (Telnyx)
+    "pyjwt>=2.8.0",           # Dashboard JWT authentication
+    "asyncpg>=0.30.0",        # PostgreSQL async driver (production DB)
 ]
 
 [project.optional-dependencies]

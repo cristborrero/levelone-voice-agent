@@ -23,8 +23,8 @@ DEPLOY_DIR = "/opt/voice-agent"
 
 ROOT = Path(__file__).parent
 
-INCLUDE_DIRS = ["app", "config", "infra"]
-INCLUDE_FILES = ["pyproject.toml"]
+INCLUDE_DIRS = ["app", "config", "infra", "alembic"]
+INCLUDE_FILES = ["pyproject.toml", "alembic.ini", "uv.lock"]
 
 EXCLUDE_PATTERNS = {
     "__pycache__",
@@ -95,13 +95,16 @@ def main() -> None:
         "apt-get install -y unzip python3-venv -qq",
         f"unzip -o /root/deploy.zip -d {DEPLOY_DIR}",
         f"cd {DEPLOY_DIR} && python3 -m venv .venv",
-        (
-            f"cd {DEPLOY_DIR} && .venv/bin/pip install -q "
-            "httpx fastapi 'uvicorn[standard]' pydantic-settings pydantic "
-            "websockets pyyaml structlog tenacity python-dotenv resend "
-            "python-dateutil openai groq paramiko "
-            "'livekit-agents>=0.8.0' livekit-plugins-openai livekit-plugins-cartesia"
-        ),
+        # Install uv if not present, then sync from lockfile (deterministic)
+        f"curl -LsSf https://astral.sh/uv/install.sh | sh 2>/dev/null || true",
+        f"cd {DEPLOY_DIR} && ($HOME/.local/bin/uv sync --frozen 2>/dev/null || (python3 -m venv .venv && .venv/bin/pip install -q "
+        "httpx fastapi 'uvicorn[standard]' pydantic-settings pydantic "
+        "websockets pyyaml structlog tenacity python-dotenv resend "
+        "python-dateutil openai groq paramiko aiosqlite PyJWT "
+        "'sqlalchemy>=2.0' 'alembic>=1.14' 'cryptography>=42' 'asyncpg>=0.30' "
+        "'livekit-agents[silero]>=0.11' livekit-plugins-openai livekit-plugins-cartesia))",
+        # Sync existing DB with migration history (safe: no data loss)
+        f"cd {DEPLOY_DIR} && ($HOME/.local/bin/uv run alembic upgrade head 2>/dev/null || .venv/bin/alembic upgrade head) || true",
         f"cp {DEPLOY_DIR}/infra/voice-agent.service /etc/systemd/system/",
         f"cp {DEPLOY_DIR}/infra/voice-webhook.service /etc/systemd/system/",
         "systemctl daemon-reload",

@@ -9,16 +9,17 @@ from datetime import datetime, timedelta, timezone
 from typing import Optional
 
 import httpx
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from sqlalchemy import case, func, select
 
+from app.api.auth import require_auth
 from app.core.enums import LeadScore
 from app.db.models import CallSession
 from app.db.session import get_session_factory
 from app.llm.router import get_router
 
-router = APIRouter(prefix="/api")
+router = APIRouter(prefix="/api", dependencies=[Depends(require_auth)])
 
 # ---------------------------------------------------------------------------
 # LiveKit helpers

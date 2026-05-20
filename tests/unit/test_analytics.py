@@ -83,10 +83,10 @@ class TestDeriveOutcome:
 # ---------------------------------------------------------------------------
 
 class TestAnalyticsOverview:
-    async def test_empty_db_returns_zeros(self, in_memory_db: None) -> None:
+    async def test_empty_db_returns_zeros(self, in_memory_db: None, auth_headers: dict) -> None:
         from app.api.admin import get_session_factory as _gsf
         client = TestClient(app)
-        resp = client.get("/api/analytics/overview")
+        resp = client.get("/api/analytics/overview", headers=auth_headers)
         assert resp.status_code == 200
         data = resp.json()
         assert data["total_calls_7d"] == 0
@@ -94,7 +94,7 @@ class TestAnalyticsOverview:
         assert data["conversion_rate"] == 0
         assert len(data["calls_by_day"]) == 7
 
-    async def test_counts_calls_within_7_days(self, in_memory_db: None) -> None:
+    async def test_counts_calls_within_7_days(self, in_memory_db: None, auth_headers: dict) -> None:
         from app.db.session import get_session_factory as gsf
         now = datetime.now(timezone.utc)
         await _insert_sessions(gsf(), [
@@ -108,13 +108,13 @@ class TestAnalyticsOverview:
         ])
 
         client = TestClient(app)
-        resp = client.get("/api/analytics/overview")
+        resp = client.get("/api/analytics/overview", headers=auth_headers)
         assert resp.status_code == 200
         data = resp.json()
         assert data["total_calls_7d"] == 2
         assert data["total_bookings_7d"] == 1
 
-    async def test_conversion_rate_calculation(self, in_memory_db: None) -> None:
+    async def test_conversion_rate_calculation(self, in_memory_db: None, auth_headers: dict) -> None:
         from app.db.session import get_session_factory as gsf
         now = datetime.now(timezone.utc)
         await _insert_sessions(gsf(), [
@@ -131,13 +131,13 @@ class TestAnalyticsOverview:
         ])
 
         client = TestClient(app)
-        resp = client.get("/api/analytics/overview")
+        resp = client.get("/api/analytics/overview", headers=auth_headers)
         data = resp.json()
         assert data["total_calls_7d"] == 4
         assert data["total_bookings_7d"] == 2
         assert data["conversion_rate"] == 50.0
 
-    async def test_outcome_counts_in_top_outcomes(self, in_memory_db: None) -> None:
+    async def test_outcome_counts_in_top_outcomes(self, in_memory_db: None, auth_headers: dict) -> None:
         from app.db.session import get_session_factory as gsf
         now = datetime.now(timezone.utc)
         await _insert_sessions(gsf(), [
@@ -152,7 +152,7 @@ class TestAnalyticsOverview:
         ])
 
         client = TestClient(app)
-        data = client.get("/api/analytics/overview").json()
+        data = client.get("/api/analytics/overview", headers=auth_headers).json()
         outcomes = {o["label"]: o["count"] for o in data["top_outcomes"]}
         assert outcomes["Meeting Booked"] == 1
         assert outcomes["Follow-up"] == 1
@@ -165,13 +165,13 @@ class TestAnalyticsOverview:
 # ---------------------------------------------------------------------------
 
 class TestRecentCalls:
-    async def test_empty_db_returns_empty_list(self, in_memory_db: None) -> None:
+    async def test_empty_db_returns_empty_list(self, in_memory_db: None, auth_headers: dict) -> None:
         client = TestClient(app)
-        resp = client.get("/api/analytics/calls")
+        resp = client.get("/api/analytics/calls", headers=auth_headers)
         assert resp.status_code == 200
         assert resp.json() == {"calls": [], "total": 0}
 
-    async def test_returns_real_sessions(self, in_memory_db: None) -> None:
+    async def test_returns_real_sessions(self, in_memory_db: None, auth_headers: dict) -> None:
         from app.db.session import get_session_factory as gsf
         now = datetime.now(timezone.utc)
         await _insert_sessions(gsf(), [
@@ -181,7 +181,7 @@ class TestRecentCalls:
         ])
 
         client = TestClient(app)
-        data = client.get("/api/analytics/calls").json()
+        data = client.get("/api/analytics/calls", headers=auth_headers).json()
         assert data["total"] == 1
         call = data["calls"][0]
         assert call["id"] == "c1"
@@ -190,7 +190,7 @@ class TestRecentCalls:
         assert call["booked"] is True
         assert call["duration_formatted"] == "4m 05s"
 
-    async def test_capped_at_12_records(self, in_memory_db: None) -> None:
+    async def test_capped_at_12_records(self, in_memory_db: None, auth_headers: dict) -> None:
         from app.db.session import get_session_factory as gsf
         now = datetime.now(timezone.utc)
         await _insert_sessions(gsf(), [
@@ -200,10 +200,10 @@ class TestRecentCalls:
         ])
 
         client = TestClient(app)
-        data = client.get("/api/analytics/calls").json()
+        data = client.get("/api/analytics/calls", headers=auth_headers).json()
         assert data["total"] == 12
 
-    async def test_ordered_most_recent_first(self, in_memory_db: None) -> None:
+    async def test_ordered_most_recent_first(self, in_memory_db: None, auth_headers: dict) -> None:
         from app.db.session import get_session_factory as gsf
         now = datetime.now(timezone.utc)
         await _insert_sessions(gsf(), [
@@ -214,6 +214,6 @@ class TestRecentCalls:
         ])
 
         client = TestClient(app)
-        calls = client.get("/api/analytics/calls").json()["calls"]
+        calls = client.get("/api/analytics/calls", headers=auth_headers).json()["calls"]
         assert calls[0]["id"] == "new"
         assert calls[1]["id"] == "old"

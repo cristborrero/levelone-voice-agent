@@ -18,6 +18,7 @@ def create_app() -> FastAPI:
     from fastapi.responses import FileResponse
     from fastapi.staticfiles import StaticFiles
     from app.api.admin import router as admin_router
+    from app.api.auth import router as auth_router
 
     @asynccontextmanager
     async def lifespan(app: FastAPI):
@@ -41,7 +42,8 @@ def create_app() -> FastAPI:
     )
 
     app.include_router(webhook_router)
-    app.include_router(admin_router)
+    app.include_router(auth_router)   # public — no JWT required
+    app.include_router(admin_router)  # protected — all routes need JWT
 
     # Serve dashboard
     dashboard_dir = Path(__file__).parent / "dashboard"
