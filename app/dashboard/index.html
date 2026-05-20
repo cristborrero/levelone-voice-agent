@@ -106,6 +106,13 @@ nav{flex:1;overflow-y:auto;padding:12px 12px}
   background:var(--s1);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;
   transition:border-color .2s;
 }
+@keyframes fadeSlideIn{
+  from{opacity:0;transform:translateY(12px)}
+  to{opacity:1;transform:translateY(0)}
+}
+.page.active .card,
+.page.active .kpi-card,
+.page.active .prov-card{animation:fadeSlideIn .3s ease-out both}
 .card:hover{border-color:var(--border2)}
 .card-header{
   padding:18px 22px;border-bottom:1px solid var(--border);
@@ -894,6 +901,7 @@ textarea{resize:vertical;font-family:var(--mono);font-size:12px;line-height:1.6}
           <button class="btn btn-success" onclick="testProvider('resend', this)"><i data-lucide="plug" style="width: 1.2em; height: 1.2em; vertical-align: middle;"></i> Test Connection</button>
           <a href="https://resend.com/domains" target="_blank" class="btn btn-ghost">↗ Resend Dashboard</a>
         </div>
+      </div>
     </div>
 
     <!-- ===== USERS ===== -->
@@ -1053,15 +1061,6 @@ function nav(page, el) {
   const pageEl = $(`page-${page}`);
   if (pageEl) {
     pageEl.classList.add('active');
-    if (window.motion) {
-      const animEls = Array.from(pageEl.querySelectorAll('.card, .kpi-card, .chart-wrap, .prov-card'));
-      if (animEls.length > 0) {
-        window.motion.animate(animEls, 
-          { opacity: [0, 1], y: [15, 0], scale: [0.98, 1] }, 
-          { duration: 0.5, delay: window.motion.stagger(0.04), easing: window.motion.spring({ stiffness: 120, damping: 14 }) }
-        );
-      }
-    }
   }
   if (el) el.classList.add('active');
   
@@ -1304,8 +1303,9 @@ const PROV_META = {
   resend:   {icon:'<i data-lucide="mail" style="width: 1.2em; height: 1.2em; vertical-align: middle;"></i>',name:'Resend',desc:'Transactional email delivery'},
 };
 async function loadProviders() {
-  const data = await authFetch('/api/providers/status').then(r=>r.json()).catch(()=>({}));
-  $('providers-grid').innerHTML = Object.entries(data).map(([key,p])=>{
+  try {
+    const data = await authFetch('/api/providers/status').then(r=>r.json());
+    $('providers-grid').innerHTML = Object.entries(data).map(([key,p])=>{
     const m = PROV_META[key]||{icon:'<i data-lucide="key" style="width: 1.2em; height: 1.2em; vertical-align: middle;"></i>',name:key,desc:''};
     return `<div class="prov-card" id="prov-card-${key}">
       <div class="prov-top">
@@ -1326,6 +1326,7 @@ async function loadProviders() {
       </div>
     </div>`;
   }).join('');
+  } catch(e) { console.error('loadProviders', e); }
 }
 
 async function testProvider(name, btn) {
@@ -1359,45 +1360,51 @@ async function saveAgentConfig() {
 
 // ======================== CALCOM ========================
 async function loadCalcom() {
-  const [prov, cfg] = await Promise.all([
-    authFetch('/api/providers/status').then(r=>r.json()),
-    authFetch('/api/config/agent').then(r=>r.json()),
-  ]);
-  $('cal-username').value = cfg.calcom_username||'';
-  $('cal-event-id').value = cfg.calcom_event_type_id||'';
-  $('cal-url').value = `https://cal.com/${cfg.calcom_username||''}/discovery-call`;
-  const ok = prov.calcom?.configured;
-  $('calcom-status').innerHTML = ok
-    ? '<span class="badge b-green"><span class="dot"></span> API Key Valid</span>'
-    : '<span class="badge b-red"><span class="dot"></span> Not configured</span>';
+  try {
+    const [prov, cfg] = await Promise.all([
+      authFetch('/api/providers/status').then(r=>r.json()),
+      authFetch('/api/config/agent').then(r=>r.json()),
+    ]);
+    $('cal-username').value = cfg.calcom_username||'';
+    $('cal-event-id').value = cfg.calcom_event_type_id||'';
+    $('cal-url').value = `https://cal.com/${cfg.calcom_username||''}/discovery-call`;
+    const ok = prov.calcom?.configured;
+    $('calcom-status').innerHTML = ok
+      ? '<span class="badge b-green"><span class="dot"></span> API Key Valid</span>'
+      : '<span class="badge b-red"><span class="dot"></span> Not configured</span>';
+  } catch(e) { console.error('loadCalcom', e); }
 }
 
 // ======================== HUBSPOT ========================
 async function loadHubspot() {
-  const [prov, cfg] = await Promise.all([
-    authFetch('/api/providers/status').then(r=>r.json()),
-    authFetch('/api/config/agent').then(r=>r.json()),
-  ]);
-  $('hs-owner-id').value = cfg.hubspot_owner_id||'';
-  $('hs-token-preview').value = prov.hubspot?.key_preview||'Not set';
-  const ok = prov.hubspot?.configured;
-  $('hubspot-status').innerHTML = ok
-    ? '<span class="badge b-green"><span class="dot"></span> Access Token Valid</span>'
-    : '<span class="badge b-red"><span class="dot"></span> Not configured</span>';
+  try {
+    const [prov, cfg] = await Promise.all([
+      authFetch('/api/providers/status').then(r=>r.json()),
+      authFetch('/api/config/agent').then(r=>r.json()),
+    ]);
+    $('hs-owner-id').value = cfg.hubspot_owner_id||'';
+    $('hs-token-preview').value = prov.hubspot?.key_preview||'Not set';
+    const ok = prov.hubspot?.configured;
+    $('hubspot-status').innerHTML = ok
+      ? '<span class="badge b-green"><span class="dot"></span> Access Token Valid</span>'
+      : '<span class="badge b-red"><span class="dot"></span> Not configured</span>';
+  } catch(e) { console.error('loadHubspot', e); }
 }
 
 // ======================== EMAIL ========================
 async function loadEmail() {
-  const [prov, cfg] = await Promise.all([
-    authFetch('/api/providers/status').then(r=>r.json()),
-    authFetch('/api/config/agent').then(r=>r.json()),
-  ]);
-  $('email-from').value = cfg.resend_from_email||'';
-  $('email-name').value = cfg.resend_from_name||'';
-  const ok = prov.resend?.configured;
-  $('resend-status').innerHTML = ok
-    ? '<span class="badge b-green"><span class="dot"></span> API Key Valid</span>'
-    : '<span class="badge b-red"><span class="dot"></span> Not configured</span>';
+  try {
+    const [prov, cfg] = await Promise.all([
+      authFetch('/api/providers/status').then(r=>r.json()),
+      authFetch('/api/config/agent').then(r=>r.json()),
+    ]);
+    $('email-from').value = cfg.resend_from_email||'';
+    $('email-name').value = cfg.resend_from_name||'';
+    const ok = prov.resend?.configured;
+    $('resend-status').innerHTML = ok
+      ? '<span class="badge b-green"><span class="dot"></span> API Key Valid</span>'
+      : '<span class="badge b-red"><span class="dot"></span> Not configured</span>';
+  } catch(e) { console.error('loadEmail', e); }
 }
 
 // ======================== MODAL ========================
@@ -1471,7 +1478,9 @@ async function fetchCurrentUser() {
     
     applyRoleRestrictions();
   } catch (err) {
-    logout();
+    console.error('fetchCurrentUser failed:', err);
+    // Only logout if it's a genuine auth failure (401 already handled in authFetch)
+    if (!_currentUser) logout();
   }
 }
 
@@ -1526,6 +1535,8 @@ async function doLogin() {
   btn.disabled = true;
   btn.textContent = 'Signing in…';
   err.classList.remove('visible');
+
+  let loginOk = false;
   try {
     const res = await fetch('/api/auth/login', {
       method: 'POST',
@@ -1535,14 +1546,18 @@ async function doLogin() {
     if (!res.ok) throw new Error('invalid');
     const data = await res.json();
     setToken(data.access_token);
-    $('login-overlay').classList.add('hidden');
-    await initDashboard();
-    lucide.createIcons();
+    loginOk = true;
   } catch {
     err.classList.add('visible');
     btn.disabled = false;
     btn.textContent = 'Sign In';
+    return;
   }
+
+  // Auth succeeded — hide login and boot dashboard
+  $('login-overlay').classList.add('hidden');
+  if (window.lucide) lucide.createIcons();
+  await initDashboard();
 }
 
 function logout() {
@@ -1564,24 +1579,30 @@ function logout() {
 
 // ======================== USER MANAGEMENT ========================
 async function loadUsers() {
-  if (!_currentUser || _currentUser.role !== 'admin') return;
+  console.log('[loadUsers] _currentUser:', _currentUser);
+  if (!_currentUser || _currentUser.role !== 'admin') {
+    console.warn('[loadUsers] blocked — not admin or no user:', _currentUser);
+    return;
+  }
   try {
     const res = await authFetch('/api/auth/users');
-    if (!res.ok) throw new Error();
+    console.log('[loadUsers] response status:', res.status);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const users = await res.json();
+    console.log('[loadUsers] users received:', users);
     const tbody = $('users-table-body');
     tbody.innerHTML = '';
-    
+
     users.forEach(u => {
       const isSelf = u.id === _currentUser.id;
       const dateStr = new Date(u.created_at).toLocaleDateString(undefined, {
         day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit'
       });
-      
+
       const tr = document.createElement('tr');
       tr.style.borderBottom = '1px solid var(--border)';
       tr.innerHTML = `
-        <td style="padding:16px 24px; font-weight:600; color:var(--text);">${u.username} ${isSelf ? '<span class="tag" style="margin-left:8px; background:rgba(124,109,255,0.15); color:var(--accent);">You</span>' : ''}</td>
+        <td style="padding:16px 24px; font-weight:600; color:var(--text);">${u.username} ${isSelf ? '<span class="tag" style="margin-left:8px; background:rgba(204,255,0,0.15); color:var(--accent);">You</span>' : ''}</td>
         <td style="padding:16px 24px;"><span class="tag" style="background:${u.role === 'admin' ? 'rgba(30,216,128,0.1)' : 'var(--s2)'}; color:${u.role === 'admin' ? 'var(--green)' : 'var(--text2)'};">${u.role.toUpperCase()}</span></td>
         <td style="padding:16px 24px; color:var(--text3); font-size:13px;">${dateStr}</td>
         <td style="padding:16px 24px; text-align:right;">
@@ -1591,7 +1612,32 @@ async function loadUsers() {
       `;
       tbody.appendChild(tr);
     });
-  } catch {
+    console.log('[loadUsers] rendered', users.length, 'rows');
+
+    // === DIAGNOSTIC — remove after fixing ===
+    const card = document.querySelector('#page-users .card');
+    const cs = getComputedStyle(card);
+    console.log('[DIAG] card:', {
+      display: cs.display, visibility: cs.visibility, opacity: cs.opacity,
+      height: card.offsetHeight, width: card.offsetWidth,
+      overflow: cs.overflow, position: cs.position,
+      transform: cs.transform, clip: cs.clip, clipPath: cs.clipPath
+    });
+    // Walk up parents
+    let el = card;
+    while (el && el !== document.body) {
+      const s = getComputedStyle(el);
+      if (s.display === 'none' || s.visibility === 'hidden' || s.opacity === '0' || el.offsetHeight === 0) {
+        console.warn('[DIAG] HIDDEN ANCESTOR:', el.tagName, el.id || el.className, {
+          display: s.display, visibility: s.visibility, opacity: s.opacity, height: el.offsetHeight
+        });
+      }
+      el = el.parentElement;
+    }
+    // Force card visible as test
+    card.style.outline = '3px solid red';
+  } catch(e) {
+    console.error('[loadUsers] error:', e);
     toast('Failed to load users list', 'error');
   }
 }
@@ -1748,7 +1794,7 @@ window.addEventListener('load', () => {
     const navItems = document.querySelectorAll('.nav-item');
     window.motion.animate(navItems,
       { opacity: [0, 1], x: [-20, 0] },
-      { duration: 0.5, delay: window.motion.stagger(0.05), easing: window.motion.spring({ stiffness: 100, damping: 12 }) }
+      { duration: 0.4, delay: window.motion.stagger(0.05), easing: [0.22, 1, 0.36, 1] }
     );
   }
   if (getToken()) {
