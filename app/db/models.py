@@ -43,3 +43,15 @@ class CallMessage(Base):
     confidence: Mapped[float | None] = mapped_column(Float, nullable=True)
 
     session: Mapped["CallSession"] = relationship("CallSession", back_populates="messages")
+
+
+class DashboardUser(Base):
+    __tablename__ = "dashboard_users"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    username: Mapped[str] = mapped_column(String(64), unique=True, index=True)
+    password_hash: Mapped[str] = mapped_column(String(256))
+    role: Mapped[str] = mapped_column(String(16), default="viewer")  # admin | viewer
+    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now(), onupdate=func.now())
+

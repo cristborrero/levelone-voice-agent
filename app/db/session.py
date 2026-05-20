@@ -35,19 +35,20 @@ def get_session_factory() -> async_sessionmaker[AsyncSession]:
 async def init_db() -> None:
     """
     Apply all pending Alembic migrations at startup.
-    Safe to call on every startup — Alembic tracks applied revisions.
+    Runs synchronously — migration is a no-op when DB is already at head (~0ms).
     """
-    import asyncio
     from alembic import command
     from alembic.config import Config
 
-    def _run_migrations() -> None:
-        cfg = Config("alembic.ini")
-        cfg.set_main_option("sqlalchemy.url", get_settings().database_url)
-        command.upgrade(cfg, "head")
+    cfg = Config("alembic.ini")
+    # Use the synchronous SQLite URL — aiosqlite cannot be used from Alembic's runner.
+    db_url = get_settings().database_url
+    sync_url = db_url.replace("sqlite+aiosqlite", "sqlite").replace("sqlite+pysqlite", "sqlite")
+    cfg.set_main_option("sqlalchemy.url", sync_url)
+    command.upgrade(cfg, "head")
 
-    # Run in a thread to avoid blocking the event loop
-    await asyncio.to_thread(_run_migrations)
+
+
 
 
 async def get_session() -> AsyncGenerator[AsyncSession, None]:

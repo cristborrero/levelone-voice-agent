@@ -21,7 +21,7 @@ from app.core.call_orchestrator import ALEX_TOOLS
 from app.core.config import get_settings
 from app.core.logging import configure_logging, get_logger, set_call_id, set_trace_id
 from app.db.models import CallMessage, CallSession
-from app.db.session import get_session_factory, init_db
+from app.db.session import get_session_factory
 
 logger = get_logger(__name__)
 
@@ -145,7 +145,9 @@ def main() -> None:
     load_dotenv()
     
     configure_logging()
-    asyncio.get_event_loop().run_until_complete(init_db())
+    # NOTE: migrations are the server's (app.main) responsibility.
+    # The worker only initialises the DB session factory — no schema changes here.
+    get_session_factory()
 
     cli.run_app(
         WorkerOptions(

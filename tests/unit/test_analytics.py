@@ -26,15 +26,7 @@ app = create_app()
 # In-memory DB fixture
 # ---------------------------------------------------------------------------
 
-@pytest.fixture(autouse=True)
-async def in_memory_db(monkeypatch: pytest.MonkeyPatch) -> None:
-    engine = create_async_engine("sqlite+aiosqlite:///:memory:")
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
 
-    factory = async_sessionmaker(engine, expire_on_commit=False)
-    monkeypatch.setattr("app.db.session._session_factory", factory)
-    monkeypatch.setattr("app.api.admin.get_session_factory", lambda: factory)
 
 
 async def _insert_sessions(factory: async_sessionmaker, sessions: list[dict]) -> None:

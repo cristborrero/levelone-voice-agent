@@ -22,7 +22,6 @@ def create_app() -> FastAPI:
 
     @asynccontextmanager
     async def lifespan(app: FastAPI):
-        await init_db()
         logger.info("app_started")
         yield
 
@@ -68,6 +67,18 @@ def main() -> None:
     
     configure_logging()
     settings = get_settings()
+
+    # Run migrations in an isolated subprocess to avoid any SQLAlchemy/asyncio
+    # engine conflicts with the main process.
+    import subprocess, sys
+    result = subprocess.run(
+        [sys.executable, "-m", "alembic", "upgrade", "head"],
+        capture_output=False,
+    )
+    if result.returncode != 0:
+        raise RuntimeError(f"Alembic migration failed with exit code {result.returncode}")
+    logger.info("migrations_applied")
+
     app = create_app()
     uvicorn.run(
         app,

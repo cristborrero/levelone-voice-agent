@@ -13,7 +13,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from sqlalchemy import case, func, select
 
-from app.api.auth import require_auth
+from app.api.auth import require_auth, require_admin
 from app.core.enums import LeadScore
 from app.db.models import CallSession
 from app.db.session import get_session_factory
@@ -138,7 +138,7 @@ class TaskUpdate(BaseModel):
     model: str
 
 
-@router.put("/config/llm/{task_name}")
+@router.put("/config/llm/{task_name}", dependencies=[Depends(require_admin)])
 async def update_llm_task(task_name: str, body: TaskUpdate):
     """Update provider/model for a specific task."""
     r = get_router()
@@ -204,7 +204,7 @@ async def providers_status():
     return results
 
 
-@router.post("/providers/{provider_name}/test")
+@router.post("/providers/{provider_name}/test", dependencies=[Depends(require_admin)])
 async def test_provider(provider_name: str):
     """Test connectivity and validity of a provider API key."""
     try:

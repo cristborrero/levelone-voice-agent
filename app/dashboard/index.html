@@ -5,21 +5,26 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>ALEX Control Centre — LevelOne Agency</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js" defer></script>
+<script type="module">
+  import { animate, stagger, inView, spring } from "https://cdn.jsdelivr.net/npm/motion@11.11.13/+esm";
+  window.motion = { animate, stagger, inView, spring };
+</script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
-  --bg:#070910;--s1:#0d0f18;--s2:#131621;--s3:#1b1f2e;
-  --border:#232840;--border2:#2d3352;
-  --accent:#7c6dff;--accent2:#00e5b8;--accent3:#ff5c7c;
+  --bg:#050505;--s1:#0a0a0a;--s2:#111111;--s3:#1a1a1a;
+  --border:#222222;--border2:#333333;
+  --accent:#ccff00;--accent2:#b3e600;--accent3:#e6ff66;
   --warn:#ffb020;--info:#3d9eff;
-  --text:#eceef8;--text2:#8890b5;--text3:#555d80;
-  --green:#1ed880;--red:#ff4062;
-  --r:14px;--r-sm:8px;
+  --text:#ffffff;--text2:#a0a0a0;--text3:#666666;
+  --green:#ccff00;--red:#ff4062;
+  --r:16px;--r-sm:8px;
   --font:'Inter',system-ui,sans-serif;
+  --font-display:'Space Grotesk',system-ui,sans-serif;
   --mono:'JetBrains Mono',monospace;
-  --sidebar:260px;
+  --sidebar:280px;
 }
 html,body{height:100%;overflow:hidden}
 body{font-family:var(--font);background:var(--bg);color:var(--text);display:flex;font-size:14px;line-height:1.5}
@@ -37,18 +42,18 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);display:flex
 }
 .sidebar::before{
   content:'';position:absolute;top:0;left:0;right:0;height:200px;
-  background:radial-gradient(ellipse at 50% -20%,rgba(124,109,255,.18) 0%,transparent 70%);
+  background:radial-gradient(ellipse at 50% -20%,rgba(204,255,0,.12) 0%,transparent 70%);
   pointer-events:none;
 }
 .logo-wrap{padding:28px 24px 20px;border-bottom:1px solid var(--border)}
 .logo-badge{display:flex;align-items:center;gap:10px;margin-bottom:6px}
 .logo-icon{
   width:36px;height:36px;border-radius:10px;
-  background:linear-gradient(135deg,var(--accent),var(--accent2));
-  display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;
-  box-shadow:0 0 20px rgba(124,109,255,.35);
+  object-fit:cover;
+  display:block;
+  box-shadow:0 0 20px rgba(204,255,0,.25);
 }
-.logo-title{font-size:16px;font-weight:800;letter-spacing:-.3px}
+.logo-title{font-size:16px;font-weight:700;letter-spacing:-.3px;font-family:var(--font-display)}
 .logo-sub{font-size:11px;color:var(--text3);letter-spacing:.6px;text-transform:uppercase;margin-left:46px}
 .agent-status{display:flex;align-items:center;gap:6px;margin-top:10px;padding:8px 12px;background:rgba(30,216,128,.06);border:1px solid rgba(30,216,128,.15);border-radius:var(--r-sm)}
 .agent-status .dot{width:7px;height:7px;border-radius:50%;background:var(--green);animation:pulse 2s ease infinite;flex-shrink:0}
@@ -64,8 +69,8 @@ nav{flex:1;overflow-y:auto;padding:12px 12px}
 }
 .nav-item:hover{color:var(--text);background:var(--s3)}
 .nav-item.active{
-  color:var(--accent);background:rgba(124,109,255,.1);
-  border-color:rgba(124,109,255,.2);
+  color:var(--accent);background:rgba(204,255,0,.08);
+  border-color:rgba(204,255,0,.15);
 }
 .nav-icon{font-size:15px;width:18px;text-align:center;flex-shrink:0}
 .nav-badge{margin-left:auto;background:var(--accent);color:#fff;font-size:10px;padding:1px 6px;border-radius:10px;font-weight:600}
@@ -74,7 +79,7 @@ nav{flex:1;overflow-y:auto;padding:12px 12px}
   padding:16px;border-top:1px solid var(--border);
   display:flex;align-items:center;gap:10px;
 }
-.avatar{width:32px;height:32px;border-radius:8px;background:linear-gradient(135deg,var(--accent),var(--accent3));display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;flex-shrink:0}
+.avatar{width:32px;height:32px;border-radius:8px;background:linear-gradient(135deg,var(--accent),var(--accent2));color:#000;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;flex-shrink:0}
 .user-info{flex:1;min-width:0}
 .user-name{font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .user-role{font-size:11px;color:var(--text3)}
@@ -83,19 +88,18 @@ nav{flex:1;overflow-y:auto;padding:12px 12px}
 .main{flex:1;display:flex;flex-direction:column;overflow:hidden}
 .topbar{
   height:56px;flex-shrink:0;
-  background:rgba(13,15,24,.8);backdrop-filter:blur(16px);
+  background:rgba(5,5,5,.7);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
   border-bottom:1px solid var(--border);
   display:flex;align-items:center;gap:16px;padding:0 28px;
 }
-.topbar-title{font-size:15px;font-weight:700;flex:1}
+.topbar-title{font-size:15px;font-weight:700;flex:1;font-family:var(--font-display)}
 .topbar-sub{font-size:12px;color:var(--text3);margin-top:1px}
 .refresh-time{font-size:11px;color:var(--text3);font-family:var(--mono)}
 .topbar-actions{display:flex;align-items:center;gap:8px}
 
 .content{flex:1;overflow-y:auto;padding:28px}
-.page{display:none;animation:fadeIn .2s ease}
+.page{display:none}
 .page.active{display:block}
-@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
 
 /* ===================== CARDS & LAYOUT ===================== */
 .card{
@@ -107,7 +111,7 @@ nav{flex:1;overflow-y:auto;padding:12px 12px}
   padding:18px 22px;border-bottom:1px solid var(--border);
   display:flex;align-items:center;justify-content:space-between;gap:12px;
 }
-.card-title{font-size:14px;font-weight:700;display:flex;align-items:center;gap:8px}
+.card-title{font-size:14px;font-weight:700;display:flex;align-items:center;gap:8px;font-family:var(--font-display)}
 .card-body{padding:22px}
 .card-footer{padding:14px 22px;border-top:1px solid var(--border);display:flex;align-items:center;gap:8px}
 
@@ -126,7 +130,7 @@ nav{flex:1;overflow-y:auto;padding:12px 12px}
 .kpi-card:hover{border-color:var(--border2);transform:translateY(-1px)}
 .kpi-icon{font-size:20px;margin-bottom:12px;opacity:.9}
 .kpi-label{font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:6px}
-.kpi-value{font-size:28px;font-weight:800;line-height:1;letter-spacing:-1px;color:var(--kpi-color,var(--text))}
+.kpi-value{font-size:28px;font-weight:700;line-height:1;letter-spacing:-1px;color:var(--kpi-color,var(--text));font-family:var(--font-display)}
 .kpi-delta{font-size:12px;color:var(--green);margin-top:6px;display:flex;align-items:center;gap:4px}
 .kpi-delta.down{color:var(--red)}
 
@@ -150,7 +154,7 @@ tbody tr:hover td{background:rgba(255,255,255,.02)}
 .badge .dot{width:5px;height:5px;border-radius:50%;background:currentColor}
 .b-green{background:rgba(30,216,128,.12);color:var(--green)}
 .b-red{background:rgba(255,64,98,.12);color:var(--red)}
-.b-purple{background:rgba(124,109,255,.15);color:var(--accent)}
+.b-purple{background:rgba(204,255,0,.1);color:var(--accent)}
 .b-teal{background:rgba(0,229,184,.1);color:var(--accent2)}
 .b-orange{background:rgba(255,176,32,.1);color:var(--warn)}
 .b-blue{background:rgba(61,158,255,.12);color:var(--info)}
@@ -163,7 +167,7 @@ input,select,textarea{
 }
 input:focus,select:focus,textarea:focus{
   border-color:var(--accent);
-  box-shadow:0 0 0 3px rgba(124,109,255,.12);
+  box-shadow:0 0 0 3px rgba(204,255,0,.15);
 }
 textarea{resize:vertical;font-family:var(--mono);font-size:12px;line-height:1.6}
 .input-group{margin-bottom:16px}
@@ -177,10 +181,10 @@ textarea{resize:vertical;font-family:var(--mono);font-size:12px;line-height:1.6}
   cursor:pointer;border:none;font-family:inherit;transition:all .15s;white-space:nowrap;
 }
 .btn:active{transform:scale(.97)}
-.btn-primary{background:linear-gradient(135deg,var(--accent),#5c4fe0);color:#fff;box-shadow:0 2px 12px rgba(124,109,255,.3)}
-.btn-primary:hover{box-shadow:0 4px 20px rgba(124,109,255,.45);transform:translateY(-1px)}
-.btn-success{background:rgba(30,216,128,.15);color:var(--green);border:1px solid rgba(30,216,128,.25)}
-.btn-success:hover{background:rgba(30,216,128,.25)}
+.btn-primary{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#000;box-shadow:0 2px 12px rgba(204,255,0,.2)}
+.btn-primary:hover{box-shadow:0 4px 20px rgba(204,255,0,.4);transform:translateY(-1px)}
+.btn-success{background:rgba(204,255,0,.15);color:var(--green);border:1px solid rgba(204,255,0,.25)}
+.btn-success:hover{background:rgba(204,255,0,.25)}
 .btn-danger{background:rgba(255,64,98,.12);color:var(--red);border:1px solid rgba(255,64,98,.2)}
 .btn-ghost{background:var(--s3);color:var(--text2);border:1px solid var(--border)}
 .btn-ghost:hover{border-color:var(--accent);color:var(--accent)}
@@ -265,19 +269,22 @@ textarea{resize:vertical;font-family:var(--mono);font-size:12px;line-height:1.6}
 #toast.error{border-color:rgba(255,64,98,.3);color:var(--red)}
 #toast.info{border-color:rgba(124,109,255,.3);color:var(--accent)}
 
+
+
 /* Modal */
-#modal-overlay{
+#modal-overlay, #modal-change-password, #modal-create-user {
   position:fixed;inset:0;background:rgba(5,6,14,.8);backdrop-filter:blur(8px);
   z-index:100;display:flex;align-items:center;justify-content:center;
   opacity:0;pointer-events:none;transition:opacity .2s;
 }
-#modal-overlay.open{opacity:1;pointer-events:auto}
+#modal-overlay.open, #modal-change-password.open, #modal-create-user.open {opacity:1;pointer-events:auto}
 .modal{
   background:var(--s1);border:1px solid var(--border2);border-radius:var(--r);
   width:520px;max-width:90vw;max-height:85vh;overflow-y:auto;
   transform:scale(.95);transition:transform .2s;
 }
-#modal-overlay.open .modal{transform:scale(1)}
+#modal-overlay.open .modal, #modal-change-password.open .modal, #modal-create-user.open .modal {transform:scale(1)}
+
 .modal-header{padding:22px 24px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
 .modal-title{font-size:16px;font-weight:700}
 .modal-body{padding:24px}
@@ -313,7 +320,7 @@ textarea{resize:vertical;font-family:var(--mono);font-size:12px;line-height:1.6}
 .login-box::before{
   content:'';position:absolute;top:-60px;left:-60px;
   width:200px;height:200px;
-  background:radial-gradient(circle,rgba(124,109,255,.25) 0%,transparent 70%);
+  background:radial-gradient(circle,rgba(204,255,0,.2) 0%,transparent 70%);
   pointer-events:none;
 }
 .login-logo{
@@ -321,10 +328,10 @@ textarea{resize:vertical;font-family:var(--mono);font-size:12px;line-height:1.6}
 }
 .login-logo-icon{
   width:44px;height:44px;border-radius:12px;
-  background:linear-gradient(135deg,var(--accent),var(--accent2));
-  display:flex;align-items:center;justify-content:center;
-  font-size:22px;box-shadow:0 0 24px rgba(124,109,255,.4);
+  overflow:hidden;flex-shrink:0;
+  box-shadow:0 0 24px rgba(204,255,0,.25);
 }
+.login-logo-icon img{width:100%;height:100%;object-fit:cover;display:block}
 .login-logo-text{font-size:20px;font-weight:800;letter-spacing:-.4px}
 .login-logo-sub{font-size:12px;color:var(--text3);margin-top:1px}
 .login-title{font-size:22px;font-weight:800;margin-bottom:6px}
@@ -340,12 +347,12 @@ textarea{resize:vertical;font-family:var(--mono);font-size:12px;line-height:1.6}
 .login-field input:focus{border-color:var(--accent)}
 .login-btn{
   width:100%;padding:13px;margin-top:8px;
-  background:linear-gradient(135deg,var(--accent),#5a4dd4);
-  color:#fff;font-size:14px;font-weight:700;
+  background:var(--accent);
+  color:#000;font-size:14px;font-weight:700;
   border:none;border-radius:var(--r-sm);
-  cursor:pointer;transition:opacity .15s;letter-spacing:.2px;
+  cursor:pointer;transition:background .15s,box-shadow .15s;letter-spacing:.2px;
 }
-.login-btn:hover{opacity:.9}
+.login-btn:hover{background:var(--accent3);box-shadow:0 0 20px rgba(204,255,0,.35)}
 .login-btn:disabled{opacity:.5;cursor:not-allowed}
 .login-error{
   margin-top:14px;padding:10px 14px;
@@ -356,6 +363,7 @@ textarea{resize:vertical;font-family:var(--mono);font-size:12px;line-height:1.6}
 .login-error.visible{display:block}
 
 </style>
+
 </head>
 <body>
 
@@ -363,7 +371,7 @@ textarea{resize:vertical;font-family:var(--mono);font-size:12px;line-height:1.6}
 <div id="login-overlay">
   <div class="login-box">
     <div class="login-logo">
-      <div class="login-logo-icon">⚡</div>
+      <div class="login-logo-icon"><img src="/dashboard/static/img/ico-levelone.png" alt="LevelOne"/></div>
       <div>
         <div class="login-logo-text">ALEX</div>
         <div class="login-logo-sub">LevelOne Control Centre</div>
@@ -388,7 +396,7 @@ textarea{resize:vertical;font-family:var(--mono);font-size:12px;line-height:1.6}
 <aside class="sidebar">
   <div class="logo-wrap">
     <div class="logo-badge">
-      <div class="logo-icon">⚡</div>
+      <img class="logo-icon" src="/dashboard/static/img/ico-levelone.png" alt="LevelOne" />
       <div>
         <div class="logo-title">ALEX</div>
       </div>
@@ -403,60 +411,71 @@ textarea{resize:vertical;font-family:var(--mono);font-size:12px;line-height:1.6}
   <nav>
     <div class="nav-section">Overview</div>
     <div class="nav-item active" onclick="nav('overview',this)">
-      <span class="nav-icon">📊</span> Dashboard
+      <span class="nav-icon"><i data-lucide="layout-dashboard" style="width: 1.2em; height: 1.2em; vertical-align: middle;"></i></span> Dashboard
     </div>
     <div class="nav-item" onclick="nav('live',this)">
-      <span class="nav-icon">📡</span> Live Calls
+      <span class="nav-icon"><i data-lucide="radio" style="width: 1.2em; height: 1.2em; vertical-align: middle;"></i></span> Live Calls
       <span class="nav-badge" id="live-count">0</span>
     </div>
     <div class="nav-item" onclick="nav('calls',this)">
-      <span class="nav-icon">📋</span> Call History
+      <span class="nav-icon"><i data-lucide="list" style="width: 1.2em; height: 1.2em; vertical-align: middle;"></i></span> Call History
     </div>
 
     <div class="nav-section">Configuration</div>
     <div class="nav-item" onclick="nav('llm',this)">
-      <span class="nav-icon">🧠</span> LLM Router
+      <span class="nav-icon"><i data-lucide="brain" style="width: 1.2em; height: 1.2em; vertical-align: middle;"></i></span> LLM Router
     </div>
     <div class="nav-item" onclick="nav('providers',this)">
-      <span class="nav-icon">🔌</span> Providers
+      <span class="nav-icon"><i data-lucide="plug" style="width: 1.2em; height: 1.2em; vertical-align: middle;"></i></span> Providers
     </div>
     <div class="nav-item" onclick="nav('agent',this)">
-      <span class="nav-icon">🤖</span> Agent Config
+      <span class="nav-icon"><i data-lucide="bot" style="width: 1.2em; height: 1.2em; vertical-align: middle;"></i></span> Agent Config
     </div>
 
     <div class="nav-section">Integrations</div>
     <div class="nav-item" onclick="nav('calcom',this)">
-      <span class="nav-icon">📅</span> Cal.com
+      <span class="nav-icon"><i data-lucide="calendar" style="width: 1.2em; height: 1.2em; vertical-align: middle;"></i></span> Cal.com
     </div>
     <div class="nav-item" onclick="nav('hubspot',this)">
-      <span class="nav-icon">🏷️</span> HubSpot CRM
+      <span class="nav-icon"><i data-lucide="tag" style="width: 1.2em; height: 1.2em; vertical-align: middle;"></i></span> HubSpot CRM
     </div>
     <div class="nav-item" onclick="nav('email',this)">
-      <span class="nav-icon">✉️</span> Email / Resend
+      <span class="nav-icon"><i data-lucide="mail" style="width: 1.2em; height: 1.2em; vertical-align: middle;"></i></span> Email / Resend
+    </div>
+
+    <div id="nav-section-admin" class="nav-section" style="display:none">Administration</div>
+    <div id="nav-item-users" class="nav-item" onclick="nav('users',this)" style="display:none">
+      <span class="nav-icon"><i data-lucide="users" style="width: 1.2em; height: 1.2em; vertical-align: middle;"></i></span> Users
     </div>
   </nav>
 
   <div class="sidebar-footer">
-    <div class="avatar">L</div>
+    <div class="avatar" id="current-user-avatar">U</div>
     <div class="user-info">
-      <div class="user-name">LevelOne Agency</div>
-      <div class="user-role">Admin</div>
+      <div class="user-name" id="current-user-name">Loading...</div>
+      <div class="user-role" id="current-user-role">...</div>
     </div>
-    <button class="btn btn-icon btn-ghost" title="Sign out" onclick="logout()" style="margin-left:auto;flex-shrink:0">🚪</button>
+    <button class="btn btn-icon btn-ghost" title="Change Password" onclick="openChangePasswordModal()" style="margin-left:auto;flex-shrink:0;margin-right:4px"><i data-lucide="settings" style="width: 1.2em; height: 1.2em; vertical-align: middle;"></i></button>
+    <button class="btn btn-icon btn-ghost" title="Sign out" onclick="logout()" style="flex-shrink:0">🚪</button>
   </div>
 </aside>
 
 <!-- ==================== MAIN ==================== -->
 <div class="main">
   <div class="topbar">
-    <div style="flex:1">
-      <div class="topbar-title" id="page-title">Dashboard</div>
-      <div class="topbar-sub" id="page-sub">Real-time overview of ALEX Voice Agent</div>
+    <div style="flex:1; display:flex; align-items:center; gap:16px;">
+      <div>
+        <div class="topbar-title" id="page-title">Dashboard</div>
+        <div class="topbar-sub" id="page-sub">Real-time overview of ALEX Voice Agent</div>
+      </div>
+      <div id="readonly-badge" style="display:none; background:rgba(255,165,2,0.1); border:1px solid rgba(255,165,2,0.3); color:#ffa502; padding:4px 10px; border-radius:6px; font-size:12px; font-weight:600; align-items:center; gap:6px;">
+        ⚠️ Read-Only Mode
+      </div>
     </div>
     <div class="refresh-time" id="last-refresh">—</div>
     <div class="topbar-actions">
       <button class="btn btn-ghost btn-sm" onclick="refreshCurrent()">↻ Refresh</button>
-      <button class="btn btn-primary btn-sm" onclick="openTestPlayground()">▶ Test in Playground</button>
+      <button id="playground-btn" class="btn btn-primary btn-sm" onclick="openTestPlayground()">▶ Test in Playground</button>
     </div>
   </div>
 
@@ -472,7 +491,7 @@ textarea{resize:vertical;font-family:var(--mono);font-size:12px;line-height:1.6}
           <div class="kpi-delta" id="kpi-calls-delta"></div>
         </div>
         <div class="kpi-card" style="--kpi-color:var(--green)">
-          <div class="kpi-icon">📅</div>
+          <div class="kpi-icon"><i data-lucide="calendar" style="width: 1.2em; height: 1.2em; vertical-align: middle;"></i></div>
           <div class="kpi-label">Meetings Booked</div>
           <div class="kpi-value" id="kpi-bookings"><span class="skeleton" style="width:40px;height:28px;display:block"></span></div>
           <div class="kpi-delta" id="kpi-bookings-delta"></div>
@@ -513,7 +532,7 @@ textarea{resize:vertical;font-family:var(--mono);font-size:12px;line-height:1.6}
 
       <div class="card">
         <div class="card-header">
-          <span class="card-title">⚡ System Health</span>
+          <span class="card-title"><i data-lucide="zap" style="width: 1.2em; height: 1.2em; vertical-align: middle;"></i> System Health</span>
           <span id="server-badge" class="badge b-green"><span class="dot"></span> Checking…</span>
         </div>
         <div class="card-body" style="display:grid;grid-template-columns:repeat(3,1fr);gap:0">
@@ -566,7 +585,7 @@ textarea{resize:vertical;font-family:var(--mono);font-size:12px;line-height:1.6}
     <!-- ===== LIVE CALLS ===== -->
     <div class="page" id="page-live">
       <div class="section-header">
-        <div class="section-title">📡 Live Calls</div>
+        <div class="section-title"><i data-lucide="radio" style="width: 1.2em; height: 1.2em; vertical-align: middle;"></i> Live Calls</div>
         <div class="section-sub">Active LiveKit rooms in real-time. Refreshes every 10 seconds.</div>
       </div>
       <div class="card" id="live-rooms-card">
@@ -600,7 +619,7 @@ textarea{resize:vertical;font-family:var(--mono);font-size:12px;line-height:1.6}
     <div class="page" id="page-calls">
       <div class="section-header" style="display:flex;align-items:center;justify-content:space-between">
         <div>
-          <div class="section-title">📋 Call History</div>
+          <div class="section-title"><i data-lucide="list" style="width: 1.2em; height: 1.2em; vertical-align: middle;"></i> Call History</div>
           <div class="section-sub">Recent calls handled by ALEX</div>
         </div>
         <div style="display:flex;gap:8px;align-items:center">
@@ -642,7 +661,7 @@ textarea{resize:vertical;font-family:var(--mono);font-size:12px;line-height:1.6}
     <div class="page" id="page-llm">
       <div class="section-header" style="display:flex;align-items:center;justify-content:space-between">
         <div>
-          <div class="section-title">🧠 LLM Router</div>
+          <div class="section-title"><i data-lucide="brain" style="width: 1.2em; height: 1.2em; vertical-align: middle;"></i> LLM Router</div>
           <div class="section-sub">Assign providers and models per task. Changes apply without restart.</div>
         </div>
         <button class="btn btn-primary" onclick="saveAllLLM()">💾 Save All Changes</button>
@@ -666,7 +685,7 @@ textarea{resize:vertical;font-family:var(--mono);font-size:12px;line-height:1.6}
     <!-- ===== PROVIDERS ===== -->
     <div class="page" id="page-providers">
       <div class="section-header">
-        <div class="section-title">🔌 API Providers</div>
+        <div class="section-title"><i data-lucide="plug" style="width: 1.2em; height: 1.2em; vertical-align: middle;"></i> API Providers</div>
         <div class="section-sub">Live status, key preview and connectivity test for each service</div>
       </div>
       <div class="providers-grid" id="providers-grid">
@@ -683,7 +702,7 @@ textarea{resize:vertical;font-family:var(--mono);font-size:12px;line-height:1.6}
     <div class="page" id="page-agent">
       <div class="section-header" style="display:flex;align-items:center;justify-content:space-between">
         <div>
-          <div class="section-title">🤖 Agent Configuration</div>
+          <div class="section-title"><i data-lucide="bot" style="width: 1.2em; height: 1.2em; vertical-align: middle;"></i> Agent Configuration</div>
           <div class="section-sub">Personality, voice and runtime settings for ALEX</div>
         </div>
         <button class="btn btn-primary" onclick="saveAgentConfig()">💾 Save Configuration</button>
@@ -723,7 +742,7 @@ textarea{resize:vertical;font-family:var(--mono);font-size:12px;line-height:1.6}
           </div>
         </div>
         <div class="card">
-          <div class="card-header"><span class="card-title">⚙️ Runtime Settings</span></div>
+          <div class="card-header"><span class="card-title"><i data-lucide="settings" style="width: 1.2em; height: 1.2em; vertical-align: middle;"></i> Runtime Settings</span></div>
           <div class="card-body">
             <div class="input-group">
               <label class="input-label">Max Call Duration (seconds)</label>
@@ -756,12 +775,12 @@ textarea{resize:vertical;font-family:var(--mono);font-size:12px;line-height:1.6}
     <!-- ===== CAL.COM ===== -->
     <div class="page" id="page-calcom">
       <div class="section-header">
-        <div class="section-title">📅 Cal.com Integration</div>
+        <div class="section-title"><i data-lucide="calendar" style="width: 1.2em; height: 1.2em; vertical-align: middle;"></i> Cal.com Integration</div>
         <div class="section-sub">Booking configuration for ALEX's discovery calls</div>
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
         <div class="card">
-          <div class="card-header"><span class="card-title">⚙️ Configuration</span></div>
+          <div class="card-header"><span class="card-title"><i data-lucide="settings" style="width: 1.2em; height: 1.2em; vertical-align: middle;"></i> Configuration</span></div>
           <div class="card-body">
             <div class="input-group">
               <label class="input-label">Cal.com Username</label>
@@ -778,12 +797,12 @@ textarea{resize:vertical;font-family:var(--mono);font-size:12px;line-height:1.6}
             <div id="calcom-status" style="margin-top:8px"></div>
           </div>
           <div class="card-footer">
-            <button class="btn btn-success" onclick="testProvider('calcom', this)">🔌 Test Connection</button>
+            <button class="btn btn-success" onclick="testProvider('calcom', this)"><i data-lucide="plug" style="width: 1.2em; height: 1.2em; vertical-align: middle;"></i> Test Connection</button>
             <a href="https://cal.com" target="_blank" class="btn btn-ghost">↗ Open Cal.com</a>
           </div>
         </div>
         <div class="card">
-          <div class="card-header"><span class="card-title">💡 How ALEX Books Meetings</span></div>
+          <div class="card-header"><span class="card-title"><i data-lucide="lightbulb" style="width: 1.2em; height: 1.2em; vertical-align: middle;"></i> How ALEX Books Meetings</span></div>
           <div class="card-body" style="font-size:13px;color:var(--text2);line-height:1.8">
             <div style="display:flex;gap:10px;margin-bottom:12px;align-items:flex-start">
               <span style="color:var(--accent);font-weight:700;flex-shrink:0">1.</span>
@@ -813,12 +832,12 @@ textarea{resize:vertical;font-family:var(--mono);font-size:12px;line-height:1.6}
     <!-- ===== HUBSPOT ===== -->
     <div class="page" id="page-hubspot">
       <div class="section-header">
-        <div class="section-title">🏷️ HubSpot CRM</div>
+        <div class="section-title"><i data-lucide="tag" style="width: 1.2em; height: 1.2em; vertical-align: middle;"></i> HubSpot CRM</div>
         <div class="section-sub">Lead management and call logging configuration</div>
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
         <div class="card">
-          <div class="card-header"><span class="card-title">⚙️ Configuration</span></div>
+          <div class="card-header"><span class="card-title"><i data-lucide="settings" style="width: 1.2em; height: 1.2em; vertical-align: middle;"></i> Configuration</span></div>
           <div class="card-body">
             <div class="input-group">
               <label class="input-label">HubSpot Owner ID</label>
@@ -832,12 +851,12 @@ textarea{resize:vertical;font-family:var(--mono);font-size:12px;line-height:1.6}
             <div id="hubspot-status" style="margin-top:8px"></div>
           </div>
           <div class="card-footer">
-            <button class="btn btn-success" onclick="testProvider('hubspot', this)">🔌 Test Connection</button>
+            <button class="btn btn-success" onclick="testProvider('hubspot', this)"><i data-lucide="plug" style="width: 1.2em; height: 1.2em; vertical-align: middle;"></i> Test Connection</button>
             <a href="https://app.hubspot.com" target="_blank" class="btn btn-ghost">↗ Open HubSpot</a>
           </div>
         </div>
         <div class="card">
-          <div class="card-header"><span class="card-title">📊 Pipeline Stages</span></div>
+          <div class="card-header"><span class="card-title"><i data-lucide="layout-dashboard" style="width: 1.2em; height: 1.2em; vertical-align: middle;"></i> Pipeline Stages</span></div>
           <div class="card-body">
             <div class="metric-row"><span class="metric-label"><span class="badge b-blue">New Lead</span></span><span class="metric-value" style="color:var(--text3);font-size:12px">Call received, info gathered</span></div>
             <div class="metric-row"><span class="metric-label"><span class="badge b-teal">Qualified</span></span><span class="metric-value" style="color:var(--text3);font-size:12px">Budget + decision maker confirmed</span></div>
@@ -852,11 +871,11 @@ textarea{resize:vertical;font-family:var(--mono);font-size:12px;line-height:1.6}
     <!-- ===== EMAIL ===== -->
     <div class="page" id="page-email">
       <div class="section-header">
-        <div class="section-title">✉️ Email / Resend</div>
+        <div class="section-title"><i data-lucide="mail" style="width: 1.2em; height: 1.2em; vertical-align: middle;"></i> Email / Resend</div>
         <div class="section-sub">Transactional email configuration for booking confirmations</div>
       </div>
       <div class="card">
-        <div class="card-header"><span class="card-title">⚙️ Sender Configuration</span></div>
+        <div class="card-header"><span class="card-title"><i data-lucide="settings" style="width: 1.2em; height: 1.2em; vertical-align: middle;"></i> Sender Configuration</span></div>
         <div class="card-body">
           <div class="config-grid">
             <div class="input-group">
@@ -872,12 +891,105 @@ textarea{resize:vertical;font-family:var(--mono);font-size:12px;line-height:1.6}
           <div id="resend-status"></div>
         </div>
         <div class="card-footer">
-          <button class="btn btn-success" onclick="testProvider('resend', this)">🔌 Test Connection</button>
+          <button class="btn btn-success" onclick="testProvider('resend', this)"><i data-lucide="plug" style="width: 1.2em; height: 1.2em; vertical-align: middle;"></i> Test Connection</button>
           <a href="https://resend.com/domains" target="_blank" class="btn btn-ghost">↗ Resend Dashboard</a>
+        </div>
+    </div>
+
+    <!-- ===== USERS ===== -->
+    <div class="page" id="page-users">
+      <div class="section-header" style="display:flex; justify-content:space-between; align-items:center;">
+        <div>
+          <div class="section-title"><i data-lucide="users" style="width: 1.2em; height: 1.2em; vertical-align: middle;"></i> User Management</div>
+          <div class="section-sub">Manage credentials, create accounts, and define access levels</div>
+        </div>
+        <button class="btn btn-primary" onclick="openCreateUserModal()">➕ Create New User</button>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Registered Accounts</span>
+        </div>
+        <div class="table-scroll">
+          <table class="table" style="width:100%; border-collapse:collapse; text-align:left;">
+            <thead>
+              <tr style="border-bottom:1px solid var(--border2); color:var(--text3); font-size:12px; text-transform:uppercase;">
+                <th style="padding:16px 24px;">Username</th>
+                <th style="padding:16px 24px;">Role</th>
+                <th style="padding:16px 24px;">Created At</th>
+                <th style="padding:16px 24px; text-align:right;">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="users-table-body">
+              <!-- Dynamically populated -->
+            </tbody>
+          </table>
         </div>
       </div>
     </div>
 
+  </div>
+</div>
+
+<!-- ==================== CREATE USER MODAL ==================== -->
+<div id="modal-create-user" onclick="closeCreateUserModal(event)">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">Create New User</div>
+      <button class="btn btn-ghost btn-icon" onclick="closeCreateUserModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="input-group" style="margin-bottom:16px">
+        <label class="input-label">Username</label>
+        <input type="text" id="new-user-username" placeholder="e.g. sales_viewer" autocomplete="off"/>
+      </div>
+      <div class="input-group" style="margin-bottom:16px">
+        <label class="input-label">Password</label>
+        <input type="password" id="new-user-password" placeholder="••••••••" autocomplete="new-password"/>
+      </div>
+      <div class="input-group">
+        <label class="input-label">Role</label>
+        <select id="new-user-role" class="input" style="width:100%; background:var(--s2); border:1px solid var(--border); border-radius:var(--r); padding:10px 14px; color:var(--text); font-size:14px; outline:none;">
+          <option value="viewer">Viewer (Read-Only)</option>
+          <option value="admin">Admin (Full Access)</option>
+        </select>
+      </div>
+      <div id="create-user-error" class="error-text" style="color:var(--red); font-size:13px; margin-top:12px; display:none;"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeCreateUserModal()">Cancel</button>
+      <button class="btn btn-primary" id="btn-submit-create-user" onclick="submitCreateUser()">Create User</button>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== CHANGE PASSWORD MODAL ==================== -->
+<div id="modal-change-password" onclick="closeChangePasswordModal(event)">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="change-pwd-title">Change Password</div>
+      <button class="btn btn-ghost btn-icon" onclick="closeChangePasswordModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="change-pwd-user-id" />
+      <div class="input-group" id="change-pwd-current-group" style="margin-bottom:16px">
+        <label class="input-label">Current Password</label>
+        <input type="password" id="change-pwd-current" placeholder="••••••••" autocomplete="current-password"/>
+      </div>
+      <div class="input-group" style="margin-bottom:16px">
+        <label class="input-label">New Password</label>
+        <input type="password" id="change-pwd-new" placeholder="••••••••" autocomplete="new-password"/>
+      </div>
+      <div class="input-group">
+        <label class="input-label">Confirm New Password</label>
+        <input type="password" id="change-pwd-confirm" placeholder="••••••••" autocomplete="new-password"/>
+      </div>
+      <div id="change-pwd-error" class="error-text" style="color:var(--red); font-size:13px; margin-top:12px; display:none;"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeChangePasswordModal()">Cancel</button>
+      <button class="btn btn-primary" id="btn-submit-change-pwd" onclick="submitChangePassword()">Update Password</button>
+    </div>
   </div>
 </div>
 
@@ -927,13 +1039,32 @@ const PAGE_META = {
   calcom:   ['Cal.com','Discovery call booking integration'],
   hubspot:  ['HubSpot CRM','Lead and pipeline management'],
   email:    ['Email / Resend','Transactional email sender'],
+  users:    ['User Management','Manage dashboard users and roles'],
 };
 
 function nav(page, el) {
+  // If no element passed (e.g. redirected from code), find it by onclick attribute
+  if (!el) {
+    el = Array.from(document.querySelectorAll('.nav-item')).find(n => n.getAttribute('onclick')?.includes(`'${page}'`));
+  }
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
-  $(`page-${page}`).classList.add('active');
-  el.classList.add('active');
+  
+  const pageEl = $(`page-${page}`);
+  if (pageEl) {
+    pageEl.classList.add('active');
+    if (window.motion) {
+      const animEls = Array.from(pageEl.querySelectorAll('.card, .kpi-card, .chart-wrap, .prov-card'));
+      if (animEls.length > 0) {
+        window.motion.animate(animEls, 
+          { opacity: [0, 1], y: [15, 0], scale: [0.98, 1] }, 
+          { duration: 0.5, delay: window.motion.stagger(0.04), easing: window.motion.spring({ stiffness: 120, damping: 14 }) }
+        );
+      }
+    }
+  }
+  if (el) el.classList.add('active');
+  
   _currentPage = page;
   const [title, sub] = PAGE_META[page] || [page, ''];
   $('page-title').textContent = title;
@@ -953,6 +1084,10 @@ function loadPage(page) {
   else if (page==='calcom') loadCalcom();
   else if (page==='hubspot') loadHubspot();
   else if (page==='email') loadEmail();
+  else if (page==='users') loadUsers();
+
+  // Apply role restrictions dynamically after page renders
+  setTimeout(applyRoleRestrictions, 50);
 }
 
 // ======================== OVERVIEW ========================
@@ -1161,17 +1296,17 @@ async function saveAllLLM() {
 
 // ======================== PROVIDERS ========================
 const PROV_META = {
-  openai:   {icon:'🤖',name:'OpenAI',desc:'LLM + STT (Whisper)'},
-  groq:     {icon:'⚡',name:'Groq',desc:'Fast auxiliary tasks — Llama 3.3'},
+  openai:   {icon:'<i data-lucide="bot" style="width: 1.2em; height: 1.2em; vertical-align: middle;"></i>',name:'OpenAI',desc:'LLM + STT (Whisper)'},
+  groq:     {icon:'<i data-lucide="zap" style="width: 1.2em; height: 1.2em; vertical-align: middle;"></i>',name:'Groq',desc:'Fast auxiliary tasks — Llama 3.3'},
   cartesia: {icon:'🎙️',name:'Cartesia',desc:'Text-to-Speech (British voice)'},
-  hubspot:  {icon:'📊',name:'HubSpot CRM',desc:'Lead management & call logging'},
-  calcom:   {icon:'📅',name:'Cal.com',desc:'Discovery call booking'},
-  resend:   {icon:'✉️',name:'Resend',desc:'Transactional email delivery'},
+  hubspot:  {icon:'<i data-lucide="layout-dashboard" style="width: 1.2em; height: 1.2em; vertical-align: middle;"></i>',name:'HubSpot CRM',desc:'Lead management & call logging'},
+  calcom:   {icon:'<i data-lucide="calendar" style="width: 1.2em; height: 1.2em; vertical-align: middle;"></i>',name:'Cal.com',desc:'Discovery call booking'},
+  resend:   {icon:'<i data-lucide="mail" style="width: 1.2em; height: 1.2em; vertical-align: middle;"></i>',name:'Resend',desc:'Transactional email delivery'},
 };
 async function loadProviders() {
   const data = await authFetch('/api/providers/status').then(r=>r.json()).catch(()=>({}));
   $('providers-grid').innerHTML = Object.entries(data).map(([key,p])=>{
-    const m = PROV_META[key]||{icon:'🔑',name:key,desc:''};
+    const m = PROV_META[key]||{icon:'<i data-lucide="key" style="width: 1.2em; height: 1.2em; vertical-align: middle;"></i>',name:key,desc:''};
     return `<div class="prov-card" id="prov-card-${key}">
       <div class="prov-top">
         <div>
@@ -1184,7 +1319,7 @@ async function loadProviders() {
       <div class="prov-key">${p.key_preview||'Not configured'}</div>
       ${p.event_type_id?`<div class="prov-key" style="margin-top:4px">Event ID: ${p.event_type_id}</div>`:''}
       <div class="prov-actions">
-        <button class="btn btn-success btn-sm" id="test-btn-${key}" onclick="testProvider('${key}', this)">🔌 Test</button>
+        <button class="btn btn-success btn-sm" id="test-btn-${key}" onclick="testProvider('${key}', this)"><i data-lucide="plug" style="width: 1.2em; height: 1.2em; vertical-align: middle;"></i> Test</button>
         ${key==='calcom'?'<a href="https://cal.com" target="_blank" class="btn btn-ghost btn-sm">↗ Open</a>'
           :key==='hubspot'?'<a href="https://app.hubspot.com" target="_blank" class="btn btn-ghost btn-sm">↗ Open</a>'
           :key==='openai'?'<a href="https://platform.openai.com" target="_blank" class="btn btn-ghost btn-sm">↗ Open</a>':''}
@@ -1293,6 +1428,7 @@ async function pollAgentStatus() {
 
 // ======================== AUTH ========================
 const TOKEN_KEY = 'alex_dashboard_token';
+let _currentUser = null;
 
 function getToken() { return localStorage.getItem(TOKEN_KEY); }
 function setToken(t) { localStorage.setItem(TOKEN_KEY, t); }
@@ -1304,6 +1440,81 @@ async function authFetch(url, opts={}) {
   const res = await fetch(url, {...opts, headers});
   if (res.status === 401) { logout(); return new Response(JSON.stringify({}), {status:401}); }
   return res;
+}
+
+async function fetchCurrentUser() {
+  try {
+    const res = await authFetch('/api/auth/me');
+    if (!res.ok) throw new Error();
+    _currentUser = await res.json();
+    
+    // Update sidebar UI with user info
+    $('current-user-name').textContent = _currentUser.username;
+    $('current-user-role').textContent = _currentUser.role.charAt(0).toUpperCase() + _currentUser.role.slice(1);
+    $('current-user-avatar').textContent = _currentUser.username.charAt(0).toUpperCase();
+    
+    // Show/hide admin panels
+    if (_currentUser.role === 'admin') {
+      $('nav-section-admin').style.display = 'block';
+      $('nav-item-users').style.display = 'flex';
+      $('readonly-badge').style.display = 'none';
+    } else {
+      $('nav-section-admin').style.display = 'none';
+      $('nav-item-users').style.display = 'none';
+      $('readonly-badge').style.display = 'flex';
+      
+      // Redirect viewer away if currently on users page
+      if (_currentPage === 'users') {
+        nav('overview', document.querySelector('.nav-item'));
+      }
+    }
+    
+    applyRoleRestrictions();
+  } catch (err) {
+    logout();
+  }
+}
+
+function applyRoleRestrictions() {
+  const isViewer = _currentUser && _currentUser.role === 'viewer';
+  
+  // Disable or hide elements that modify settings
+  document.querySelectorAll('button').forEach(btn => {
+    const txt = btn.innerText || btn.textContent;
+    const isNavOrUtil = btn.classList.contains('nav-item') || 
+                        txt.includes('Refresh') || 
+                        txt.includes('Sign out') || 
+                        txt.includes('Cancel') || 
+                        txt.includes('Close') || 
+                        txt.includes('✕') || 
+                        txt.includes('Sign In');
+                        
+    if (isViewer && !isNavOrUtil) {
+      btn.disabled = true;
+      btn.style.opacity = '0.5';
+      btn.style.cursor = 'not-allowed';
+      btn.title = 'Requires administrator privileges';
+    } else if (!isViewer) {
+      btn.disabled = false;
+      btn.style.opacity = '1';
+      btn.style.cursor = 'pointer';
+      btn.removeAttribute('title');
+    }
+  });
+  
+  document.querySelectorAll('input, select, textarea').forEach(input => {
+    // Avoid locking out login or admin forms
+    if (input.id.startsWith('login-')) return;
+    if (input.id.startsWith('new-user-') || input.id.startsWith('change-pwd-')) return;
+    
+    if (isViewer) {
+      input.disabled = true;
+      input.style.opacity = '0.7';
+    } else {
+      input.disabled = false;
+      input.style.opacity = '1';
+    }
+  });
 }
 
 async function doLogin() {
@@ -1325,7 +1536,8 @@ async function doLogin() {
     const data = await res.json();
     setToken(data.access_token);
     $('login-overlay').classList.add('hidden');
-    initDashboard();
+    await initDashboard();
+    lucide.createIcons();
   } catch {
     err.classList.add('visible');
     btn.disabled = false;
@@ -1335,6 +1547,7 @@ async function doLogin() {
 
 function logout() {
   clearToken();
+  _currentUser = null;
   $('login-overlay').classList.remove('hidden');
   $('login-username').value = '';
   $('login-password').value = '';
@@ -1349,8 +1562,171 @@ function logout() {
   });
 });
 
+// ======================== USER MANAGEMENT ========================
+async function loadUsers() {
+  if (!_currentUser || _currentUser.role !== 'admin') return;
+  try {
+    const res = await authFetch('/api/auth/users');
+    if (!res.ok) throw new Error();
+    const users = await res.json();
+    const tbody = $('users-table-body');
+    tbody.innerHTML = '';
+    
+    users.forEach(u => {
+      const isSelf = u.id === _currentUser.id;
+      const dateStr = new Date(u.created_at).toLocaleDateString(undefined, {
+        day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit'
+      });
+      
+      const tr = document.createElement('tr');
+      tr.style.borderBottom = '1px solid var(--border)';
+      tr.innerHTML = `
+        <td style="padding:16px 24px; font-weight:600; color:var(--text);">${u.username} ${isSelf ? '<span class="tag" style="margin-left:8px; background:rgba(124,109,255,0.15); color:var(--accent);">You</span>' : ''}</td>
+        <td style="padding:16px 24px;"><span class="tag" style="background:${u.role === 'admin' ? 'rgba(30,216,128,0.1)' : 'var(--s2)'}; color:${u.role === 'admin' ? 'var(--green)' : 'var(--text2)'};">${u.role.toUpperCase()}</span></td>
+        <td style="padding:16px 24px; color:var(--text3); font-size:13px;">${dateStr}</td>
+        <td style="padding:16px 24px; text-align:right;">
+          <button class="btn btn-ghost btn-sm" onclick="openChangePasswordModalFor(${u.id}, '${u.username}')" style="margin-right:8px"><i data-lucide="key" style="width: 1.2em; height: 1.2em; vertical-align: middle;"></i> Password</button>
+          ${isSelf ? '' : `<button class="btn btn-danger btn-sm" onclick="deleteUser(${u.id}, '${u.username}')"><i data-lucide="trash-2" style="width: 1.2em; height: 1.2em; vertical-align: middle;"></i> Delete</button>`}
+        </td>
+      `;
+      tbody.appendChild(tr);
+    });
+  } catch {
+    toast('Failed to load users list', 'error');
+  }
+}
+
+// Create User Modal
+function openCreateUserModal() {
+  $('new-user-username').value = '';
+  $('new-user-password').value = '';
+  $('new-user-role').value = 'viewer';
+  $('create-user-error').style.display = 'none';
+  $('modal-create-user').classList.add('open');
+}
+function closeCreateUserModal(e) {
+  if (!e || e.target === $('modal-create-user') || e.currentTarget === e.target) {
+    $('modal-create-user').classList.remove('open');
+  }
+}
+async function submitCreateUser() {
+  const u = $('new-user-username').value.trim();
+  const p = $('new-user-password').value;
+  const r = $('new-user-role').value;
+  if (!u || !p) {
+    $('create-user-error').textContent = 'Username and password are required';
+    $('create-user-error').style.display = 'block';
+    return;
+  }
+  const btn = $('btn-submit-create-user');
+  btn.disabled = true;
+  try {
+    const res = await authFetch('/api/auth/users', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({username: u, password: p, role: r})
+    });
+    if (!res.ok) {
+      const errData = await res.json();
+      throw new Error(errData.detail || 'Failed to create user');
+    }
+    toast('User created successfully', 'success');
+    closeCreateUserModal();
+    loadUsers();
+  } catch (err) {
+    $('create-user-error').textContent = err.message;
+    $('create-user-error').style.display = 'block';
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+// Delete User
+async function deleteUser(id, username) {
+  if (!confirm(`Are you sure you want to delete user "${username}"?`)) return;
+  try {
+    const res = await authFetch(`/api/auth/users/${id}`, { method: 'DELETE' });
+    if (!res.ok) throw new Error();
+    toast(`User "${username}" deleted`, 'success');
+    loadUsers();
+  } catch {
+    toast('Failed to delete user', 'error');
+  }
+}
+
+// Change Password Modal
+function openChangePasswordModal() {
+  openChangePasswordModalFor(_currentUser.id, _currentUser.username, true);
+}
+function openChangePasswordModalFor(id, username, isSelf = false) {
+  $('change-pwd-user-id').value = id;
+  $('change-pwd-current').value = '';
+  $('change-pwd-new').value = '';
+  $('change-pwd-confirm').value = '';
+  $('change-pwd-error').style.display = 'none';
+  $('change-pwd-title').textContent = `Change Password for ${username}`;
+  
+  if (isSelf) {
+    $('change-pwd-current-group').style.display = 'block';
+  } else {
+    $('change-pwd-current-group').style.display = 'none';
+  }
+  
+  $('modal-change-password').classList.add('open');
+}
+function closeChangePasswordModal(e) {
+  if (!e || e.target === $('modal-change-password') || e.currentTarget === e.target) {
+    $('modal-change-password').classList.remove('open');
+  }
+}
+async function submitChangePassword() {
+  const id = $('change-pwd-user-id').value;
+  const curr = $('change-pwd-current').value;
+  const newP = $('change-pwd-new').value;
+  const conf = $('change-pwd-confirm').value;
+  
+  if (newP !== conf) {
+    $('change-pwd-error').textContent = 'New passwords do not match';
+    $('change-pwd-error').style.display = 'block';
+    return;
+  }
+  if (!newP) {
+    $('change-pwd-error').textContent = 'New password cannot be empty';
+    $('change-pwd-error').style.display = 'block';
+    return;
+  }
+  
+  const btn = $('btn-submit-change-pwd');
+  btn.disabled = true;
+  
+  const payload = { new_password: newP };
+  if ($('change-pwd-current-group').style.display !== 'none') {
+    payload.current_password = curr;
+  }
+  
+  try {
+    const res = await authFetch(`/api/auth/users/${id}/password`, {
+      method: 'PUT',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(payload)
+    });
+    if (!res.ok) {
+      const errData = await res.json();
+      throw new Error(errData.detail || 'Failed to change password');
+    }
+    toast('Password updated successfully', 'success');
+    closeChangePasswordModal();
+  } catch (err) {
+    $('change-pwd-error').textContent = err.message;
+    $('change-pwd-error').style.display = 'block';
+  } finally {
+    btn.disabled = false;
+  }
+}
+
 // ======================== INIT ========================
-function initDashboard() {
+async function initDashboard() {
+  await fetchCurrentUser();
   loadOverview();
   pollAgentStatus();
   setInterval(pollAgentStatus, 20000);
@@ -1358,13 +1734,29 @@ function initDashboard() {
   setInterval(() => { if(_currentPage==='overview') loadOverview(); }, 30000);
 }
 
-document.addEventListener('DOMContentLoaded', () => {
+window.addEventListener('load', () => {
+  // All deferred scripts (Lucide, Chart.js) are guaranteed to be loaded by now.
+  if (window.lucide) {
+    lucide.createIcons();
+    // Throttled observer — re-render icons at most once per 200ms
+    let iconTimer = null;
+    new MutationObserver(() => {
+      if (!iconTimer) iconTimer = setTimeout(() => { lucide.createIcons(); iconTimer = null; }, 200);
+    }).observe(document.body, { childList: true, subtree: true });
+  }
+  if (window.motion) {
+    const navItems = document.querySelectorAll('.nav-item');
+    window.motion.animate(navItems,
+      { opacity: [0, 1], x: [-20, 0] },
+      { duration: 0.5, delay: window.motion.stagger(0.05), easing: window.motion.spring({ stiffness: 100, damping: 12 }) }
+    );
+  }
   if (getToken()) {
     $('login-overlay').classList.add('hidden');
     initDashboard();
   }
-  // Otherwise login overlay is visible by default
 });
 </script>
+<script src="https://cdn.jsdelivr.net/npm/lucide@0.475.0/dist/umd/lucide.min.js" defer></script>
 </body>
 </html>

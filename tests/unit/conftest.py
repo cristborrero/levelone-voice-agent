@@ -25,5 +25,20 @@ os.environ.setdefault("JWT_SECRET_KEY", "test-secret-key-for-unit-tests-only")
 def auth_headers() -> dict[str, str]:
     """Return Authorization headers with a fresh JWT for the test user."""
     from app.api.auth import _create_token
-    token = _create_token("testuser")
+    token = _create_token("testuser", role="admin")
     return {"Authorization": f"Bearer {token}"}
+
+
+@pytest.fixture(autouse=True)
+async def in_memory_db(monkeypatch: pytest.MonkeyPatch) -> None:
+    from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
+    from app.db.models import Base
+    
+    engine = create_async_engine("sqlite+aiosqlite:///:memory:")
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+
+    factory = async_sessionmaker(engine, expire_on_commit=False)
+    monkeypatch.setattr("app.db.session._session_factory", factory)
+    monkeypatch.setattr("app.api.admin.get_session_factory", lambda: factory)
+    monkeypatch.setattr("app.api.auth.get_session_factory", lambda: factory)
