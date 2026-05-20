@@ -141,6 +141,9 @@ async def _persist_message(call_id: str, role: str, content: str) -> None:
 
 def main() -> None:
     import asyncio
+    from dotenv import load_dotenv
+    load_dotenv()
+    
     configure_logging()
     asyncio.get_event_loop().run_until_complete(init_db())
 

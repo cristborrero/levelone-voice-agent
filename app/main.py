@@ -61,6 +61,9 @@ def create_app() -> FastAPI:
 
 
 def main() -> None:
+    from dotenv import load_dotenv
+    load_dotenv()
+    
     configure_logging()
     settings = get_settings()
     app = create_app()
