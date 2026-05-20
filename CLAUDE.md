@@ -6,20 +6,20 @@ ALEX is the inbound voice AI agent for LevelOne Digital Agency (UK). It handles 
 
 ## Stack
 
-| Layer | Tool | Role |
-|-------|------|------|
-| **Telephony** | Telnyx SIP Trunk | UK PSTN number, inbound/outbound |
-| **Voice infra** | LiveKit (self-hosted, VPS Contabo) | WebRTC/SIP room management |
-| **Agent runtime** | LiveKit Agents (Python) | Worker pool, job dispatch per call |
-| **STT** | Deepgram (nova-3) via livekit-plugins | Speech-to-text |
-| **TTS** | Cartesia (sonic-english) via livekit-plugins | Text-to-speech |
-| **LLM** | OpenAI GPT-4o / Groq Llama (router) | Conversation brain + aux tasks |
-| **CRM** | HubSpot Free | Lead upsert, deal, call note |
-| **Scheduling** | Cal.com API | Discovery/demo slot booking |
-| **Email** | Resend | Booking confirmation + follow-up |
-| **DB** | PostgreSQL + SQLAlchemy async | CallSession, CallMessage persistence |
-| **API** | FastAPI + uvicorn | Webhook (Telnyx events) + admin |
-| **Deploy** | VPS Contabo + systemd | voice-agent.service + voice-webhook.service |
+| Layer             | Tool                                         | Role                                        |
+| ----------------- | -------------------------------------------- | ------------------------------------------- |
+| **Telephony**     | Telnyx SIP Trunk                             | UK PSTN number, inbound/outbound            |
+| **Voice infra**   | LiveKit (self-hosted, VPS Contabo)           | WebRTC/SIP room management                  |
+| **Agent runtime** | LiveKit Agents (Python)                      | Worker pool, job dispatch per call          |
+| **STT**           | Deepgram (nova-3) via livekit-plugins        | Speech-to-text                              |
+| **TTS**           | Cartesia (sonic-english) via livekit-plugins | Text-to-speech                              |
+| **LLM**           | OpenAI GPT-4o / Groq Llama (router)          | Conversation brain + aux tasks              |
+| **CRM**           | HubSpot Free                                 | Lead upsert, deal, call note                |
+| **Scheduling**    | Cal.com API                                  | Discovery/demo slot booking                 |
+| **Email**         | Resend                                       | Booking confirmation + follow-up            |
+| **DB**            | PostgreSQL + SQLAlchemy async                | CallSession, CallMessage persistence        |
+| **API**           | FastAPI + uvicorn                            | Webhook (Telnyx events) + admin             |
+| **Deploy**        | VPS Contabo + systemd                        | voice-agent.service + voice-webhook.service |
 
 ## Architecture
 
@@ -85,6 +85,18 @@ python -m app.agent.worker  # run LiveKit agent worker
 python deploy_vps.py   # rsync + systemd reload
 systemctl status voice-agent voice-webhook
 ```
+
+### Production Access & Infrastructure
+
+*   **Reverse Proxy:** Caddy is running as the reverse proxy on the VPS.
+*   **Production Port:** The HTTPS server is exposed on port `7880` (Caddy handles TLS).
+*   **Dashboard URL:** `https://agent.leveloneagency.co.uk:7880/dashboard`
+*   **Webhook Endpoint:** `https://agent.leveloneagency.co.uk:7880/webhook/telnyx` (for Telnyx webhook integration)
+*   **DB Initial Sync:** The first time you deploy or change DB schemas, run:
+    ```bash
+    cd /opt/voice-agent
+    .venv/bin/alembic stamp head
+    ```
 
 ## Rules
 
