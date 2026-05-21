@@ -1,0 +1,657 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Voice Sandbox — ALEX Control Centre</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/livekit-client/dist/livekit-client.umd.min.js"></script>
+
+  <style>
+    /* ── Design tokens — identical to index.html ── */
+    :root {
+      --bg: #050505;
+      --s1: #0a0a0a;
+      --s2: #111111;
+      --s3: #1a1a1a;
+      --border: #222222;
+      --border2: #333333;
+      --accent: #ccff00;
+      --accent2: #b3e600;
+      --accent3: #e6ff66;
+      --warn: #ffb020;
+      --info: #3d9eff;
+      --text: #ffffff;
+      --text2: #a0a0a0;
+      --text3: #666666;
+      --green: #ccff00;
+      --red: #ff4062;
+      --r: 16px;
+      --r-sm: 8px;
+      --font: 'Inter', system-ui, sans-serif;
+      --font-display: 'Space Grotesk', system-ui, sans-serif;
+      --mono: 'JetBrains Mono', monospace;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: var(--font);
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    /* ── Topbar ── */
+    .topbar {
+      height: 56px;
+      flex-shrink: 0;
+      background: rgba(5, 5, 5, 0.9);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 0 28px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .logo-badge {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .logo-icon {
+      width: 30px;
+      height: 30px;
+      border-radius: 8px;
+      object-fit: cover;
+      box-shadow: 0 0 16px rgba(204, 255, 0, 0.25);
+    }
+
+    .logo-title {
+      font-size: 15px;
+      font-weight: 700;
+      letter-spacing: -0.3px;
+      font-family: var(--font-display);
+    }
+
+    .topbar-sep {
+      width: 1px;
+      height: 20px;
+      background: var(--border2);
+    }
+
+    .topbar-label {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--accent);
+      font-family: var(--font-display);
+    }
+
+    .topbar-right {
+      margin-left: auto;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .btn-back {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 14px;
+      border-radius: var(--r-sm);
+      background: var(--s2);
+      border: 1px solid var(--border2);
+      color: var(--text2);
+      font-family: var(--font);
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.15s;
+      text-decoration: none;
+    }
+
+    .btn-back:hover {
+      color: var(--text);
+      border-color: var(--border2);
+      background: var(--s3);
+    }
+
+    /* ── Main layout ── */
+    .main {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 40px 24px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* Subtle glow background matching dashboard sidebar */
+    .main::before {
+      content: '';
+      position: absolute;
+      top: -100px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 600px;
+      height: 300px;
+      background: radial-gradient(ellipse at 50% 0%, rgba(204, 255, 0, 0.06) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    /* ── Card — same as dashboard .card ── */
+    .sandbox-card {
+      background: var(--s1);
+      border: 1px solid var(--border);
+      border-radius: var(--r);
+      width: 100%;
+      max-width: 480px;
+      overflow: hidden;
+      position: relative;
+      z-index: 1;
+    }
+
+    /* Card header */
+    .card-header {
+      padding: 24px 28px 20px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .card-header-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      background: rgba(204, 255, 0, 0.08);
+      border: 1px solid rgba(204, 255, 0, 0.15);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      flex-shrink: 0;
+    }
+
+    .card-header-text h2 {
+      font-size: 15px;
+      font-weight: 700;
+      letter-spacing: -0.2px;
+      font-family: var(--font-display);
+    }
+
+    .card-header-text p {
+      font-size: 12px;
+      color: var(--text3);
+      margin-top: 1px;
+    }
+
+    /* Card body */
+    .card-body {
+      padding: 32px 28px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    /* ── Orb / Status ring ── */
+    .orb-wrap {
+      position: relative;
+      width: 128px;
+      height: 128px;
+      margin-bottom: 24px;
+    }
+
+    .orb {
+      width: 128px;
+      height: 128px;
+      border-radius: 50%;
+      background: var(--s2);
+      border: 1px solid var(--border2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2.8rem;
+      transition: all 0.3s ease;
+      position: relative;
+      z-index: 2;
+    }
+
+    .orb.listening {
+      border-color: rgba(204, 255, 0, 0.5);
+      box-shadow: 0 0 0 4px rgba(204, 255, 0, 0.06), 0 0 32px rgba(204, 255, 0, 0.2);
+      animation: orb-pulse 2s ease-in-out infinite;
+    }
+
+    .orb.speaking {
+      border-color: rgba(204, 255, 0, 0.8);
+      box-shadow: 0 0 0 6px rgba(204, 255, 0, 0.08), 0 0 48px rgba(204, 255, 0, 0.3);
+    }
+
+    @keyframes orb-pulse {
+      0%, 100% { box-shadow: 0 0 0 4px rgba(204, 255, 0, 0.06), 0 0 32px rgba(204, 255, 0, 0.2); }
+      50% { box-shadow: 0 0 0 8px rgba(204, 255, 0, 0.1), 0 0 48px rgba(204, 255, 0, 0.3); }
+    }
+
+    /* Pulse rings */
+    .orb-ring {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      border-radius: 50%;
+      border: 1px solid rgba(204, 255, 0, 0.15);
+      display: none;
+    }
+
+    .orb-ring.r1 { width: 152px; height: 152px; animation: ring-out 2s ease-out infinite; }
+    .orb-ring.r2 { width: 180px; height: 180px; animation: ring-out 2s ease-out infinite 0.6s; }
+
+    .orb-wrap.active .orb-ring { display: block; }
+
+    @keyframes ring-out {
+      0% { opacity: 0.5; transform: translate(-50%, -50%) scale(0.95); }
+      100% { opacity: 0; transform: translate(-50%, -50%) scale(1.05); }
+    }
+
+    /* ── Status row ── */
+    .status-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 28px;
+    }
+
+    .status-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--text3);
+      flex-shrink: 0;
+      transition: background 0.3s;
+    }
+
+    .status-dot.active { background: var(--accent); animation: pulse 2s ease infinite; }
+    .status-dot.error  { background: var(--red); }
+    .status-dot.warn   { background: var(--warn); animation: pulse 1s ease infinite; }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.3; }
+    }
+
+    .status-text {
+      font-size: 13px;
+      color: var(--text2);
+      font-weight: 500;
+      transition: color 0.3s;
+    }
+
+    .status-text.active { color: var(--accent); }
+    .status-text.error  { color: var(--red); }
+    .status-text.warn   { color: var(--warn); }
+
+    /* ── Waveform bars ── */
+    .wave {
+      display: none;
+      align-items: flex-end;
+      justify-content: center;
+      gap: 3px;
+      height: 32px;
+      margin-bottom: 24px;
+    }
+
+    .wave.visible { display: flex; }
+
+    .wave-bar {
+      width: 3px;
+      border-radius: 2px;
+      background: var(--accent);
+      animation: wave-anim 1s ease-in-out infinite alternate;
+      opacity: 0.7;
+      min-height: 3px;
+    }
+
+    .wave-bar:nth-child(1) { animation-delay: 0.00s; }
+    .wave-bar:nth-child(2) { animation-delay: 0.10s; }
+    .wave-bar:nth-child(3) { animation-delay: 0.20s; }
+    .wave-bar:nth-child(4) { animation-delay: 0.15s; }
+    .wave-bar:nth-child(5) { animation-delay: 0.05s; }
+    .wave-bar:nth-child(6) { animation-delay: 0.25s; }
+    .wave-bar:nth-child(7) { animation-delay: 0.12s; }
+
+    @keyframes wave-anim {
+      from { height: 4px; opacity: 0.5; }
+      to   { height: 28px; opacity: 1; }
+    }
+
+    /* ── Buttons — matching dashboard patterns ── */
+    .btn {
+      width: 100%;
+      padding: 14px 20px;
+      border: none;
+      border-radius: var(--r-sm);
+      font-family: var(--font);
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: all 0.15s;
+      letter-spacing: 0.01em;
+    }
+
+    .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    .btn-call {
+      background: var(--accent);
+      color: #000;
+      box-shadow: 0 0 20px rgba(204, 255, 0, 0.2);
+    }
+
+    .btn-call:hover:not(:disabled) {
+      background: var(--accent3);
+      box-shadow: 0 0 28px rgba(204, 255, 0, 0.35);
+      transform: translateY(-1px);
+    }
+
+    .btn-end {
+      background: rgba(255, 64, 98, 0.1);
+      color: var(--red);
+      border: 1px solid rgba(255, 64, 98, 0.25);
+    }
+
+    .btn-end:hover:not(:disabled) {
+      background: rgba(255, 64, 98, 0.18);
+      border-color: rgba(255, 64, 98, 0.4);
+      transform: translateY(-1px);
+    }
+
+    /* ── Alert — auth warning ── */
+    .alert {
+      width: 100%;
+      background: rgba(255, 64, 98, 0.06);
+      border: 1px solid rgba(255, 64, 98, 0.2);
+      border-radius: var(--r-sm);
+      padding: 12px 16px;
+      font-size: 12px;
+      color: var(--red);
+      margin-bottom: 16px;
+      display: none;
+      line-height: 1.5;
+    }
+
+    .alert a { color: var(--red); text-decoration: underline; }
+
+    /* ── Info strip at the bottom of card ── */
+    .card-footer {
+      padding: 14px 28px;
+      border-top: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .info-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--text3);
+      flex-shrink: 0;
+    }
+
+    .info-text {
+      font-size: 11px;
+      color: var(--text3);
+      font-family: var(--mono);
+    }
+
+    /* ── Hidden audio ── */
+    #audio-out {
+      position: absolute;
+      width: 0;
+      height: 0;
+      overflow: hidden;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Topbar — same chrome as the main dashboard -->
+  <header class="topbar">
+    <div class="logo-badge">
+      <img class="logo-icon" src="/dashboard/static/img/ico-levelone.png" alt="LevelOne" onerror="this.style.display='none'">
+      <span class="logo-title">ALEX Control Centre</span>
+    </div>
+    <div class="topbar-sep"></div>
+    <span class="topbar-label">Voice Sandbox</span>
+    <div class="topbar-right">
+      <a class="btn-back" href="/dashboard">
+        ← Back to Dashboard
+      </a>
+    </div>
+  </header>
+
+  <!-- Main content -->
+  <main class="main">
+    <div class="sandbox-card">
+
+      <!-- Card header -->
+      <div class="card-header">
+        <div class="card-header-icon">🎙️</div>
+        <div class="card-header-text">
+          <h2>Talk to ALEX</h2>
+          <p>Live voice session — test agent behaviour before production</p>
+        </div>
+      </div>
+
+      <!-- Card body -->
+      <div class="card-body">
+
+        <!-- Orb -->
+        <div class="orb-wrap" id="orb-wrap">
+          <div class="orb-ring r1"></div>
+          <div class="orb-ring r2"></div>
+          <div class="orb" id="orb">🤖</div>
+        </div>
+
+        <!-- Status -->
+        <div class="status-row">
+          <div class="status-dot" id="status-dot"></div>
+          <span class="status-text" id="status-text">Ready to connect</span>
+        </div>
+
+        <!-- Waveform -->
+        <div class="wave" id="wave">
+          <div class="wave-bar" style="height:12px"></div>
+          <div class="wave-bar" style="height:22px"></div>
+          <div class="wave-bar" style="height:16px"></div>
+          <div class="wave-bar" style="height:26px"></div>
+          <div class="wave-bar" style="height:10px"></div>
+          <div class="wave-bar" style="height:20px"></div>
+          <div class="wave-bar" style="height:14px"></div>
+        </div>
+
+        <!-- Auth warning -->
+        <div class="alert" id="auth-warn">
+          Session expired or not logged in. <a href="/dashboard">Log in to the dashboard</a> first.
+        </div>
+
+        <!-- Call button -->
+        <button id="btn-call" class="btn btn-call" onclick="startCall()">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/>
+            <path d="M19 10v1a7 7 0 0 1-14 0v-1"/>
+            <line x1="12" x2="12" y1="19" y2="22"/>
+          </svg>
+          Start Voice Session
+        </button>
+
+        <!-- End button -->
+        <button id="btn-end" class="btn btn-end" onclick="endCall()" style="display:none; margin-top:10px;">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M10.68 13.31a16 16 0 0 0 3.41 2.6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7 2 2 0 0 1 1.72 2v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.42 19.42 0 0 1 4.43 13a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.34 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L7.32 9.9"/>
+            <line x1="22" y1="2" x2="2" y2="22"/>
+          </svg>
+          End Session
+        </button>
+
+      </div><!-- /card-body -->
+
+      <!-- Card footer -->
+      <div class="card-footer">
+        <div class="info-dot"></div>
+        <span class="info-text" id="session-info">No active session</span>
+      </div>
+
+    </div><!-- /sandbox-card -->
+  </main>
+
+  <div id="audio-out"></div>
+
+  <script>
+    let room = null;
+
+    // TOKEN_KEY must match index.html
+    const TOKEN_KEY = 'alex_dashboard_token';
+
+    function getToken() {
+      return localStorage.getItem(TOKEN_KEY);
+    }
+
+    function setStatus(text, type = '') {
+      const dot  = document.getElementById('status-dot');
+      const span = document.getElementById('status-text');
+      span.textContent = text;
+      span.className = 'status-text' + (type ? ' ' + type : '');
+      dot.className  = 'status-dot'  + (type ? ' ' + type : '');
+    }
+
+    function setOrb(state) {
+      const orb  = document.getElementById('orb');
+      const wrap = document.getElementById('orb-wrap');
+      orb.className  = 'orb'      + (state ? ' ' + state : '');
+      wrap.className = 'orb-wrap' + (state === 'listening' || state === 'speaking' ? ' active' : '');
+      orb.textContent = state === 'speaking' ? '🔊' : state === 'listening' ? '👂' : '🤖';
+    }
+
+    function setSessionInfo(text) {
+      document.getElementById('session-info').textContent = text;
+    }
+
+    async function startCall() {
+      const btnCall  = document.getElementById('btn-call');
+      const btnEnd   = document.getElementById('btn-end');
+      const authWarn = document.getElementById('auth-warn');
+
+      const jwt = getToken();
+      if (!jwt) {
+        authWarn.style.display = 'block';
+        return;
+      }
+      authWarn.style.display = 'none';
+
+      btnCall.disabled = true;
+      setStatus('Connecting…', 'warn');
+
+      try {
+        // Request LiveKit credentials from the backend
+        const res = await fetch('/api/test/join', {
+          method: 'POST',
+          headers: { 'Authorization': 'Bearer ' + jwt },
+        });
+
+        if (res.status === 401) {
+          authWarn.style.display = 'block';
+          setStatus('Session expired — please log in again', 'error');
+          btnCall.disabled = false;
+          return;
+        }
+
+        if (!res.ok) throw new Error('Server error ' + res.status);
+
+        const { url, token, room: roomName } = await res.json();
+
+        // Connect
+        room = new LivekitClient.Room({ adaptiveStream: true, dynacast: true });
+
+        room.on(LivekitClient.RoomEvent.TrackSubscribed, (track) => {
+          if (track.kind === LivekitClient.Track.Kind.Audio) {
+            const el = track.attach();
+            document.getElementById('audio-out').appendChild(el);
+            setOrb('speaking');
+            setStatus('ALEX is speaking', 'active');
+            document.getElementById('wave').classList.add('visible');
+          }
+        });
+
+        room.on(LivekitClient.RoomEvent.TrackUnsubscribed, (track) => {
+          track.detach();
+          setOrb('listening');
+          setStatus('Listening…', 'active');
+          document.getElementById('wave').classList.remove('visible');
+        });
+
+        room.on(LivekitClient.RoomEvent.Disconnected, () => {
+          cleanup();
+          setStatus('Session ended', '');
+        });
+
+        await room.connect(url, token);
+
+        setStatus('Enabling microphone…', 'warn');
+        await room.localParticipant.setMicrophoneEnabled(true);
+
+        setOrb('listening');
+        setStatus('Connected — ALEX is listening', 'active');
+        setSessionInfo('Room: ' + roomName);
+
+        btnCall.style.display = 'none';
+        btnEnd.style.display  = 'flex';
+
+      } catch (err) {
+        console.error(err);
+        setStatus('Error: ' + err.message, 'error');
+        setOrb('');
+        btnCall.disabled = false;
+      }
+    }
+
+    async function endCall() {
+      if (room) {
+        await room.disconnect();
+        room = null;
+      }
+      cleanup();
+    }
+
+    function cleanup() {
+      setOrb('');
+      document.getElementById('wave').classList.remove('visible');
+      document.getElementById('audio-out').innerHTML = '';
+      document.getElementById('btn-call').style.display = 'flex';
+      document.getElementById('btn-call').disabled      = false;
+      document.getElementById('btn-end').style.display  = 'none';
+      setStatus('Ready to connect', '');
+      setSessionInfo('No active session');
+    }
+  </script>
+
+</body>
+</html>

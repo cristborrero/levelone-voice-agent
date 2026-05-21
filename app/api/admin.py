@@ -415,3 +415,45 @@ async def recent_calls():
         })
 
     return {"calls": calls, "total": len(calls)}
+
+
+# ---------------------------------------------------------------------------
+# Test sandbox — one-click voice session
+# ---------------------------------------------------------------------------
+
+@router.post("/test/join")
+async def test_join(current_user: CurrentUser = Depends(require_auth)):
+    """
+    Generate a LiveKit participant token for the voice test sandbox.
+    The caller gets back {url, token} ready to pass to the LiveKit JS SDK.
+    No manual token copy-paste required — the dashboard handles everything.
+    """
+    import uuid
+    from livekit.api import AccessToken, VideoGrants
+
+    room_name = f"test-{uuid.uuid4().hex[:8]}"
+    identity = f"dashboard-{current_user.username}"
+
+    token = (
+        AccessToken(
+            api_key=os.environ["LIVEKIT_API_KEY"],
+            api_secret=os.environ["LIVEKIT_API_SECRET"],
+        )
+        .with_identity(identity)
+        .with_name(f"{current_user.username} (test)")
+        .with_grants(VideoGrants(
+            room_join=True,
+            room=room_name,
+            can_publish=True,
+            can_subscribe=True,
+        ))
+        .to_jwt()
+    )
+
+    return {
+        "url": os.environ["LIVEKIT_URL"],
+        "token": token,
+        "room": room_name,
+        "identity": identity,
+    }
+

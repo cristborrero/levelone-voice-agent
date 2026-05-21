@@ -53,11 +53,16 @@ def create_app() -> FastAPI:
         async def serve_dashboard():
             return FileResponse(str(dashboard_dir / "index.html"))
 
+        @app.get("/dashboard/playground", include_in_schema=False)
+        async def serve_playground():
+            return FileResponse(str(dashboard_dir / "playground.html"))
+
     @app.get("/health")
     async def health():
         return {"status": "healthy", "service": "voice-agent"}
 
     return app
+
 
 
 

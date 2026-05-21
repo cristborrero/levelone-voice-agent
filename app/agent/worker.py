@@ -59,10 +59,7 @@ class AlexAgent(Agent):
 
 async def entrypoint(ctx: JobContext) -> None:
     settings = get_settings()
-    call_id = ctx.room.name or str(uuid.uuid4())
     trace_id = str(uuid.uuid4())
-
-    set_call_id(call_id)
     set_trace_id(trace_id)
 
     logger.info("call_started", room=ctx.room.name)
@@ -76,27 +73,67 @@ async def entrypoint(ctx: JobContext) -> None:
             caller_number = participant.identity or "unknown"
             break
 
+    db_factory = get_session_factory()
+
+    # Try to find a pre-created ringing session from the webhook
+    call_id = None
+    if caller_number != "unknown":
+        from sqlalchemy import select
+        async with db_factory() as db:
+            result = await db.execute(
+                select(CallSession)
+                .where(CallSession.caller_number == caller_number)
+                .where(CallSession.status == "ringing")
+                .order_by(CallSession.started_at.desc())
+                .limit(1)
+            )
+            existing = result.scalar_one_or_none()
+            if existing:
+                call_id = existing.id
+                existing.livekit_room = ctx.room.name
+                existing.status = "active"
+                await db.commit()
+                logger.info("linked_to_webhook_session", call_id=call_id)
+
+    # Fallback to generating a unique session ID
+    if not call_id:
+        call_id = str(uuid.uuid4())
+        async with db_factory() as db:
+            db.add(CallSession(
+                id=call_id,
+                caller_number=caller_number,
+                livekit_room=ctx.room.name,
+                status="active",
+            ))
+            await db.commit()
+            logger.info("created_new_session", call_id=call_id)
+
+    set_call_id(call_id)
+
     call_ctx = CallContext(
         call_id=call_id,
         caller_number=caller_number,
         livekit_room=ctx.room.name,
     )
 
-    # Persist session to DB so analytics has a record from call start
-    db_factory = get_session_factory()
-    async with db_factory() as db:
-        db.add(CallSession(
-            id=call_id,
-            caller_number=caller_number,
-            livekit_room=ctx.room.name,
-        ))
-        await db.commit()
-
     session = AgentSession[CallContext](
-        vad=silero.VAD.load(),
+        vad=silero.VAD.load(
+            # Still needed for speech-start detection, but no longer in the
+            # end-of-turn critical path thanks to turn_detection="stt" below.
+            sample_rate=8000,
+            min_silence_duration=0.2,
+            min_speech_duration=0.05,
+            prefix_padding_duration=0.2,
+            activation_threshold=0.5,
+            deactivation_threshold=0.35,
+        ),
         stt=lk_openai.STT(
             model=settings.openai_stt_model,
             api_key=settings.openai_api_key,
+            # use_realtime=True → OpenAI Realtime API with server-side VAD.
+            # This eliminates Silero from the end-of-turn critical path entirely.
+            # The server detects speech boundaries — no local ML inference needed.
+            use_realtime=True,
         ),
         llm=lk_openai.LLM(
             model=settings.openai_model,
@@ -107,8 +144,11 @@ async def entrypoint(ctx: JobContext) -> None:
             voice=settings.cartesia_voice_id,
             api_key=settings.cartesia_api_key,
         ),
+        # turn_detection is now handled server-side by OpenAI Realtime STT.
+        # No need to specify it explicitly — the realtime STT manages end-of-turn.
         userdata=call_ctx,
     )
+
 
     await session.start(
         room=ctx.room,
