@@ -1489,14 +1489,22 @@ function applyRoleRestrictions() {
   
   // Disable or hide elements that modify settings
   document.querySelectorAll('button').forEach(btn => {
-    const txt = btn.innerText || btn.textContent;
+    const txt = (btn.innerText || btn.textContent || '').trim();
+    const title = btn.getAttribute('title') || '';
     const isNavOrUtil = btn.classList.contains('nav-item') || 
+                        btn.id === 'playground-btn' ||
+                        btn.id === 'btn-submit-change-pwd' ||
                         txt.includes('Refresh') || 
                         txt.includes('Sign out') || 
+                        title.includes('Sign out') ||
+                        title.includes('Change Password') ||
                         txt.includes('Cancel') || 
                         txt.includes('Close') || 
                         txt.includes('✕') || 
-                        txt.includes('Sign In');
+                        txt.includes('Sign In') ||
+                        txt.includes('View') ||
+                        txt.includes('Prev') ||
+                        txt.includes('Next');
                         
     if (isViewer && !isNavOrUtil) {
       btn.disabled = true;
